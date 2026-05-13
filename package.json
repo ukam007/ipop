@@ -109,6 +109,14 @@
         "command": "ipop.completion.editSource",
         "title": "Edit Completion Source",
         "icon": "$(edit)"
+      },
+      {
+        "command": "ipop.completion.quick",
+        "title": "Quick Symbol Search"
+      },
+      {
+        "command": "ipop.completion.trigger",
+        "title": "Search Symbols"
       }
     ],
     "menus": {
@@ -213,11 +221,19 @@
         },
         "ipop.telnet.timeout": {
           "type": "number",
-          "default": 10000,
+          "default": 30000,
           "description": "Connection timeout (ms)"
         }
       }
-    }
+    },
+    "keybindings": [
+      {
+        "command": "ipop.completion.trigger",
+        "key": "ctrl+shift+space",
+        "mac": "cmd+shift+space",
+        "when": "terminalFocus"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

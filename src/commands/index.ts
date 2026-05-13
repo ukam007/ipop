@@ -226,9 +226,14 @@ export async function removeCompletionSource(item: CompletionSourceTreeItem): Pr
     
     if (confirm !== 'Yes') return;
 
-    getSymbolIndexer().removeSource(source.id);
-    await getConfigStore().deleteCompletionSource(source.id);
-    getCompletionSourcesProvider().refresh();
+    try {
+        getSymbolIndexer().removeSource(source.id);
+        await getConfigStore().deleteCompletionSource(source.id);
+        getCompletionSourcesProvider().refresh();
+        vscode.window.showInformationMessage(`Source "${source.name}" removed`);
+    } catch (error) {
+        vscode.window.showErrorMessage(`Failed to remove source: ${error}`);
+    }
 }
 
 export async function refreshIndex(item: CompletionSourceTreeItem): Promise<void> {
