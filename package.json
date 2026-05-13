@@ -1,0 +1,229 @@
+{
+  "name": "ipop-telnet",
+  "displayName": "IPOP Telnet Terminal",
+  "description": "Telnet terminal with smart code completion for VSCode",
+  "version": "1.0.0",
+  "publisher": "ipop",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Terminal"
+  ],
+  "activationEvents": [
+    "onView:ipop.connections"
+  ],
+  "main": "./out/extension.js",
+  "icon": "resources/icon.svg",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ipop",
+          "title": "IPOP Telnet",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "ipop": [
+        {
+          "id": "ipop.connections",
+          "name": "Connections"
+        },
+        {
+          "id": "ipop.completionSources",
+          "name": "Completion Sources"
+        },
+        {
+          "id": "ipop.shortcuts",
+          "name": "Shortcuts"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "ipop.newConnection",
+        "title": "New Telnet Connection",
+        "icon": "$(add)"
+      },
+      {
+        "command": "ipop.connect",
+        "title": "Connect",
+        "icon": "$(play)"
+      },
+      {
+        "command": "ipop.disconnect",
+        "title": "Disconnect",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "ipop.editConnection",
+        "title": "Edit Connection",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "ipop.deleteConnection",
+        "title": "Delete Connection",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "ipop.addShortcut",
+        "title": "Add Shortcut Command",
+        "icon": "$(add)"
+      },
+      {
+        "command": "ipop.deleteShortcut",
+        "title": "Delete Shortcut",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "ipop.sendShortcut",
+        "title": "Send Shortcut"
+      },
+      {
+        "command": "ipop.completion.addSource",
+        "title": "Add Completion Source",
+        "icon": "$(add)"
+      },
+      {
+        "command": "ipop.completion.removeSource",
+        "title": "Remove Completion Source",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "ipop.completion.refreshIndex",
+        "title": "Refresh Symbol Index",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "ipop.completion.addCustomSymbol",
+        "title": "Add Custom Symbol",
+        "icon": "$(add)"
+      },
+      {
+        "command": "ipop.completion.editSource",
+        "title": "Edit Completion Source",
+        "icon": "$(edit)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "ipop.newConnection",
+          "when": "view == ipop.connections",
+          "group": "navigation"
+        },
+        {
+          "command": "ipop.addShortcut",
+          "when": "view == ipop.shortcuts",
+          "group": "navigation"
+        },
+        {
+          "command": "ipop.completion.addSource",
+          "when": "view == ipop.completionSources",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "ipop.connect",
+          "when": "view == ipop.connections && viewItem == connection-disconnected",
+          "group": "inline"
+        },
+        {
+          "command": "ipop.disconnect",
+          "when": "view == ipop.connections && viewItem == connection-connected",
+          "group": "inline"
+        },
+        {
+          "command": "ipop.editConnection",
+          "when": "view == ipop.connections && viewItem =~ /connection-.*/",
+          "group": "1_edit"
+        },
+        {
+          "command": "ipop.deleteConnection",
+          "when": "view == ipop.connections && viewItem =~ /connection-.*/",
+          "group": "2_delete"
+        },
+        {
+          "command": "ipop.sendShortcut",
+          "when": "view == ipop.shortcuts && viewItem == shortcut",
+          "group": "inline"
+        },
+        {
+          "command": "ipop.deleteShortcut",
+          "when": "view == ipop.shortcuts && viewItem == shortcut",
+          "group": "1_delete"
+        },
+        {
+          "command": "ipop.completion.refreshIndex",
+          "when": "view == ipop.completionSources && viewItem == completion-source",
+          "group": "inline"
+        },
+        {
+          "command": "ipop.completion.editSource",
+          "when": "view == ipop.completionSources && viewItem == completion-source",
+          "group": "1_edit"
+        },
+        {
+          "command": "ipop.completion.removeSource",
+          "when": "view == ipop.completionSources && viewItem == completion-source",
+          "group": "2_delete"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "IPOP Telnet",
+      "properties": {
+        "ipop.completion.enableAutoComplete": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable terminal auto-completion"
+        },
+        "ipop.completion.triggerDelay": {
+          "type": "number",
+          "default": 100,
+          "description": "Auto-completion trigger delay (ms)"
+        },
+        "ipop.completion.maxResults": {
+          "type": "number",
+          "default": 20,
+          "description": "Maximum number of completion results"
+        },
+        "ipop.telnet.defaultPort": {
+          "type": "number",
+          "default": 23,
+          "description": "Default Telnet port"
+        },
+        "ipop.telnet.defaultEncoding": {
+          "type": "string",
+          "default": "utf-8",
+          "enum": ["utf-8", "gbk", "gb2312", "big5"],
+          "description": "Default character encoding"
+        },
+        "ipop.telnet.timeout": {
+          "type": "number",
+          "default": 10000,
+          "description": "Connection timeout (ms)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "fuse.js": "^7.0.0",
+    "iconv-lite": "^0.6.3"
+  }
+}
