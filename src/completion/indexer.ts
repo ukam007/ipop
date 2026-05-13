@@ -23,29 +23,41 @@ export class SymbolIndexer {
 
         const symbols: SymbolInfo[] = [];
 
-        if (source.type === 'workspace') {
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (workspaceFolders) {
-                for (const folder of workspaceFolders) {
-                    const symbolsFromFolder = parseDirectory(
-                        folder.uri.fsPath,
-                        source.id,
-                        source.filePatterns || ['*.h', '*.hpp', '*.c', '*.cpp']
-                    );
-                    symbols.push(...symbolsFromFolder);
+        try {
+            if (source.type === 'workspace') {
+                const workspaceFolders = vscode.workspace.workspaceFolders;
+                if (workspaceFolders) {
+                    for (const folder of workspaceFolders) {
+                        try {
+                            const symbolsFromFolder = parseDirectory(
+                                folder.uri.fsPath,
+                                source.id,
+                                source.filePatterns || ['*.h', '*.hpp', '*.c', '*.cpp']
+                            );
+                            symbols.push(...symbolsFromFolder);
+                        } catch (e) {
+                            console.error('Parse workspace error:', e);
+                        }
+                    }
                 }
+            } else if (source.type === 'external' && source.path) {
+                try {
+                    if (fs.existsSync(source.path)) {
+                        const symbolsFromPath = parseDirectory(
+                            source.path,
+                            source.id,
+                            source.filePatterns || ['*.h', '*.hpp', '*.c', '*.cpp']
+                        );
+                        symbols.push(...symbolsFromPath);
+                    }
+                } catch (e) {
+                    console.error('Parse external path error:', e);
+                }
+            } else if (source.type === 'custom' && source.symbols) {
+                symbols.push(...createSymbolsFromCustom(source));
             }
-        } else if (source.type === 'external' && source.path) {
-            if (fs.existsSync(source.path)) {
-                const symbolsFromPath = parseDirectory(
-                    source.path,
-                    source.id,
-                    source.filePatterns || ['*.h', '*.hpp', '*.c', '*.cpp']
-                );
-                symbols.push(...symbolsFromPath);
-            }
-        } else if (source.type === 'custom' && source.symbols) {
-            symbols.push(...createSymbolsFromCustom(source));
+        } catch (error) {
+            console.error('Index source error:', error);
         }
 
         getSymbolStore().addSymbols(symbols);

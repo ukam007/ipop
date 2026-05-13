@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import { initConfigStore } from './config/store';
-import { initProviders, getConnectionsProvider, getShortcutsProvider, getCompletionSourcesProvider } from './sidebar/provider';
+import { initProviders } from './sidebar/provider';
 import { registerCommands } from './commands';
 import { registerCompletionCommands } from './completion/provider';
-import { initSymbolIndexer, getSymbolIndexer } from './completion/indexer';
+import { getSymbolIndexer } from './completion/indexer';
 
-export async function activate(context: vscode.ExtensionContext): Promise<void> {
+export function activate(context: vscode.ExtensionContext): void {
     initConfigStore(context);
     
     const providers = initProviders();
@@ -18,14 +18,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         ...registerCompletionCommands()
     );
 
-    await initSymbolIndexer();
+    initSymbolIndexerInBackground();
+}
 
-    const stats = getSymbolIndexer().getStats();
-    vscode.window.showInformationMessage(
-        `IPOP Telnet activated: ${stats.totalSymbols} symbols indexed`
-    );
+async function initSymbolIndexerInBackground(): Promise<void> {
+    try {
+        const indexer = getSymbolIndexer();
+        await indexer.indexAll();
+        const stats = indexer.getStats();
+        if (stats.totalSymbols > 0) {
+            vscode.window.showInformationMessage(
+                `IPOP Telnet: ${stats.totalSymbols} symbols indexed`
+            );
+        }
+    } catch (error) {
+        console.error('Symbol indexer error:', error);
+    }
 }
 
 export function deactivate(): void {
-    getSymbolIndexer().clear();
+    try {
+        getSymbolIndexer().clear();
+    } catch (error) {
+        console.error('Deactivate error:', error);
+    }
 }
