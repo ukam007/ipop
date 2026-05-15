@@ -22,7 +22,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 - ✅ 模糊搜索，快速匹配
 - ✅ 三种补全源：Workspace、External、Custom
 - ✅ 符号索引持久化存储
-- ✅ **自动补全**（输入 >= 2 字符自动触发）
+- ✅ **自动补全提示**（输入达到阈值时显示提示）
 - ✅ **Tab 键补全**（按 Tab 显示补全列表）
 - ✅ 手动触发（Ctrl+Shift+Space）
 - ✅ 仅 IPOP 终端生效（可配置）
@@ -109,18 +109,13 @@ npx vsce package --skip-license --allow-missing-repository
 
 ### 4. 使用补全
 
-#### 方式一：自动补全（VSCode 1.85+）
+#### 方式一：自动提示 + Tab 键触发（推荐）
 1. 在 IPOP 终端输入 >= 2 字符
-2. 自动弹出补全列表
-3. Tab 键选择，Enter 键确认
-
-#### 方式二：Tab 键触发
-1. 在 IPOP 终端输入 >= 2 字符
-2. 按 **Tab** 键
-3. 弹出补全列表
+2. **自动显示提示**：`💡 N matches for "xxx" - Press TAB to complete`
+3. 按 **Tab** 键显示补全列表
 4. 选择补全项自动插入
 
-#### 方式三：手动触发
+#### 方式二：手动触发
 1. 按 **Ctrl+Shift+Space**
 2. 输入搜索词（如：`get`、`init`）
 3. 选择匹配结果自动插入
@@ -171,6 +166,8 @@ npx vsce package --skip-license --allow-missing-repository
 | `autoTrigger` | 自动补全开关 | `true` |
 | `tabTrigger` | Tab键补全开关 | `true` |
 | `minChars` | 最小触发字符数 | `2` |
+| `showHint` | 自动提示开关 | `true` |
+| `hintDelay` | 提示延迟(ms) | `200` |
 | `scope` | 补全范围（ipop/all） | `ipop` |
 | `maxResults` | 最大结果数 | `20` |
 | `triggerDelay` | 补全延迟(ms) | `100` |
@@ -277,7 +274,7 @@ node test-modules.js
 
 ## 已知限制
 
-1. **自动补全 API**：VSCode 1.85+ 才支持 TerminalCompletionItemProvider，旧版本仅支持 Tab 键触发
+1. **自动补全 API**：VSCode TerminalCompletionItemProvider 对 Pseudoterminal 不生效，已通过自动提示方式解决
 2. **语言支持**：当前仅支持 C/C++ 符号解析
 3. **大文件索引**：大型代码库索引可能耗时较长
 4. **Telnet 协议**：基础实现，复杂协商选项未完全支持
@@ -292,11 +289,12 @@ node test-modules.js
 - Telnet 连接管理
 - 多编码支持 (UTF-8/GBK/GB2312/Big5)
 - C/C++ 符号智能补全
-- **自动补全**（输入 >= 2 字符自动触发）
+- **自动补全提示**（输入达到阈值时显示提示，引导用户按 Tab）
 - **Tab 键补全**（按 Tab 显示补全列表）
 - 快捷命令功能
 - 侧边栏 UI
 - 补全源管理（Workspace/External/Custom）
+- 新增配置项：showHint、hintDelay
 
 **修复问题**
 - 终端激活阻塞问题

@@ -2,7 +2,12 @@ import * as vscode from 'vscode';
 import { TelnetClient } from '../telnet/client';
 import { TelnetConnection, ConnectionStatus } from '../types';
 import { getTabHelper } from '../completion/provider';
-import { isTabCompletionEnabled, getMinTriggerChars } from '../completion/terminal-filter';
+import { 
+    isTabCompletionEnabled, 
+    getMinTriggerChars, 
+    isShowHintEnabled,
+    isAutoCompletionEnabled
+} from '../completion/terminal-filter';
 
 export class TerminalManager implements vscode.Pseudoterminal {
     private writeEmitter = new vscode.EventEmitter<string>();
@@ -15,6 +20,8 @@ export class TerminalManager implements vscode.Pseudoterminal {
     private connection: TelnetConnection;
     private status: ConnectionStatus = 'disconnected';
     private inputBuffer: string = '';
+    private hintShown: boolean = false;
+    private lastHintLength: number = 0;
 
     constructor(connection: TelnetConnection) {
         this.connection = connection;
@@ -53,18 +60,28 @@ export class TerminalManager implements vscode.Pseudoterminal {
             this.client.send(this.inputBuffer);
             this.writeEmitter.fire('\r\n');
             this.inputBuffer = '';
+            this.hintShown = false;
+            this.lastHintLength = 0;
         } else if (data === '\x7f' || data === '\b') {
             if (this.inputBuffer.length > 0) {
                 this.inputBuffer = this.inputBuffer.slice(0, -1);
                 this.writeEmitter.fire('\b \b');
+                
+                if (this.inputBuffer.length < this.lastHintLength) {
+                    this.hintShown = false;
+                }
             }
         } else if (data.charCodeAt(0) === 3) {
             this.client.sendRaw('\x03');
             this.writeEmitter.fire('^C\r\n');
             this.inputBuffer = '';
+            this.hintShown = false;
+            this.lastHintLength = 0;
         } else if (data.charCodeAt(0) >= 32) {
             this.inputBuffer += data;
             this.writeEmitter.fire(data);
+            
+            this.checkAndShowHint();
         }
     }
 
@@ -115,6 +132,30 @@ export class TerminalManager implements vscode.Pseudoterminal {
         }
     }
 
+    private checkAndShowHint(): void {
+        if (!isShowHintEnabled() || !isAutoCompletionEnabled()) {
+            return;
+        }
+
+        const minChars = getMinTriggerChars();
+        
+        if (this.inputBuffer.length >= minChars && !this.hintShown) {
+            const matchCount = getTabHelper().quickSearch(this.inputBuffer);
+            
+            if (matchCount > 0) {
+                this.showCompletionHint(this.inputBuffer, matchCount);
+                this.hintShown = true;
+                this.lastHintLength = this.inputBuffer.length;
+            }
+        }
+    }
+
+    private showCompletionHint(query: string, count: number): void {
+        this.writeEmitter.fire('\r\n');
+        this.writeEmitter.fire(`💡 ${count} matches for "${query}" - Press TAB to complete\r\n`);
+        this.writeEmitter.fire(`${this.connection.host}:${this.connection.port}> ${this.inputBuffer}`);
+    }
+
     private async handleTabCompletion(): Promise<void> {
         if (!isTabCompletionEnabled()) {
             return;
@@ -126,7 +167,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
         if (query.length < minChars) {
             this.writeEmitter.fire('\r\n');
             this.writeEmitter.fire(`Tab completion requires at least ${minChars} characters\r\n`);
-            this.writeEmitter.fire(`${this.connection.host}:${this.connection.port}> `);
+            this.writeEmitter.fire(`${this.connection.host}:${this.connection.port}> ${this.inputBuffer}`);
             return;
         }
 
@@ -138,7 +179,9 @@ export class TerminalManager implements vscode.Pseudoterminal {
 
             if (insertText) {
                 this.inputBuffer = insertText;
-                this.writeEmitter.fire(`Completed: ${insertText}\r\n`);
+                this.hintShown = false;
+                this.lastHintLength = 0;
+                this.writeEmitter.fire(`✓ Completed: ${insertText}\r\n`);
                 this.writeEmitter.fire(`${this.connection.host}:${this.connection.port}> ${insertText}`);
             } else {
                 this.writeEmitter.fire('No selection made\r\n');

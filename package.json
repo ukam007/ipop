@@ -218,6 +218,16 @@
           ],
           "description": "Completion scope"
         },
+        "ipop.completion.showHint": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show completion hint when typing reaches minimum chars"
+        },
+        "ipop.completion.hintDelay": {
+          "type": "number",
+          "default": 200,
+          "description": "Delay before showing hint (ms)"
+        },
         "ipop.completion.triggerDelay": {
           "type": "number",
           "default": 100,

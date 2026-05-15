@@ -71,3 +71,13 @@ export function isTabCompletionEnabled(): boolean {
     const config = vscode.workspace.getConfiguration('ipop.completion');
     return config.get<boolean>('tabTrigger', true);
 }
+
+export function isShowHintEnabled(): boolean {
+    const config = vscode.workspace.getConfiguration('ipop.completion');
+    return config.get<boolean>('showHint', true);
+}
+
+export function getHintDelay(): number {
+    const config = vscode.workspace.getConfiguration('ipop.completion');
+    return config.get<number>('hintDelay', 200);
+}

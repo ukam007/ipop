@@ -69,6 +69,18 @@ export class IPOPCompletionProvider {
 export class TabCompletionHelper {
     private lastQuery: string = '';
     
+    quickSearch(query: string): number {
+        const indexer = getSymbolIndexer();
+        const stats = indexer.getStats();
+        
+        if (stats.totalSymbols === 0) {
+            return 0;
+        }
+        
+        const results = indexer.search(query);
+        return results.length;
+    }
+    
     async showCompletionPicker(query: string): Promise<string | undefined> {
         const indexer = getSymbolIndexer();
         const stats = indexer.getStats();
