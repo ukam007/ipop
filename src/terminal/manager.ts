@@ -36,11 +36,16 @@ export class TerminalManager implements vscode.Pseudoterminal {
     constructor(connection: TelnetConnection) {
         this.connection = connection;
         
-        const logConfig = vscode.workspace.getConfiguration('ipop.logging');
-        if (logConfig.get<boolean>('enabled', true)) {
-            const logDir = logConfig.get<string>('path', '');
-            const defaultLogDir = this.getDefaultLogDir();
-            this.logger = new SessionLogger(connection, logDir || defaultLogDir);
+        try {
+            const logConfig = vscode.workspace.getConfiguration('ipop.logging');
+            if (logConfig.get<boolean>('enabled', true)) {
+                const logDir = logConfig.get<string>('path', '');
+                const defaultLogDir = this.getDefaultLogDir();
+                this.logger = new SessionLogger(connection, logDir || defaultLogDir);
+            }
+        } catch (error) {
+            console.error('Failed to create logger:', error);
+            this.logger = null;
         }
     }
 

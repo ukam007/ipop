@@ -22,9 +22,6 @@ export class LogFileManager {
         this.maxFiles = config.get<number>('maxFiles', 50);
         this.maxAge = config.get<number>('maxAge', 7);
         this.maxSize = config.get<number>('maxSize', 10);
-        
-        this.ensureLogDir();
-        this.cleanupOldLogs();
     }
 
     private getDefaultLogDir(): string {
@@ -36,8 +33,12 @@ export class LogFileManager {
     }
 
     private ensureLogDir(): void {
-        if (!fs.existsSync(this.logDir)) {
-            fs.mkdirSync(this.logDir, { recursive: true });
+        try {
+            if (!fs.existsSync(this.logDir)) {
+                fs.mkdirSync(this.logDir, { recursive: true });
+            }
+        } catch (error) {
+            console.error('Failed to create log directory:', error);
         }
     }
 
@@ -46,68 +47,82 @@ export class LogFileManager {
     }
 
     getLogFiles(): LogFileInfo[] {
-        if (!fs.existsSync(this.logDir)) {
+        try {
+            if (!fs.existsSync(this.logDir)) {
+                this.ensureLogDir();
+                return [];
+            }
+
+            const files = fs.readdirSync(this.logDir)
+                .filter(f => f.endsWith('.log'))
+                .map(f => {
+                    const filePath = path.join(this.logDir, f);
+                    const stats = fs.statSync(filePath);
+                    return {
+                        name: f,
+                        path: filePath,
+                        size: stats.size,
+                        created: stats.birthtime,
+                        modified: stats.mtime
+                    };
+                })
+                .sort((a, b) => b.modified.getTime() - a.modified.getTime());
+            
+            return files;
+        } catch (error) {
+            console.error('Failed to read log files:', error);
             return [];
         }
-
-        const files = fs.readdirSync(this.logDir)
-            .filter(f => f.endsWith('.log'))
-            .map(f => {
-                const filePath = path.join(this.logDir, f);
-                const stats = fs.statSync(filePath);
-                return {
-                    name: f,
-                    path: filePath,
-                    size: stats.size,
-                    created: stats.birthtime,
-                    modified: stats.mtime
-                };
-            })
-            .sort((a, b) => b.modified.getTime() - a.modified.getTime());
-        
-        return files;
     }
 
     cleanupOldLogs(): void {
-        const files = this.getLogFiles();
-        const now = Date.now();
-        const maxAgeMs = this.maxAge * 24 * 60 * 60 * 1000;
-        const maxSizeBytes = this.maxSize * 1024 * 1024;
+        try {
+            const files = this.getLogFiles();
+            const now = Date.now();
+            const maxAgeMs = this.maxAge * 24 * 60 * 60 * 1000;
+            const maxSizeBytes = this.maxSize * 1024 * 1024;
 
-        let deletedCount = 0;
+            let deletedCount = 0;
 
-        for (const file of files) {
-            const ageMs = now - file.created.getTime();
-            if (ageMs > maxAgeMs) {
-                fs.unlinkSync(file.path);
-                deletedCount++;
+            for (const file of files) {
+                const ageMs = now - file.created.getTime();
+                if (ageMs > maxAgeMs) {
+                    fs.unlinkSync(file.path);
+                    deletedCount++;
+                }
             }
-        }
 
-        const remainingFiles = this.getLogFiles();
-        if (remainingFiles.length > this.maxFiles) {
-            const toDelete = remainingFiles.slice(this.maxFiles);
-            for (const file of toDelete) {
-                fs.unlinkSync(file.path);
-                deletedCount++;
+            const remainingFiles = this.getLogFiles();
+            if (remainingFiles.length > this.maxFiles) {
+                const toDelete = remainingFiles.slice(this.maxFiles);
+                for (const file of toDelete) {
+                    fs.unlinkSync(file.path);
+                    deletedCount++;
+                }
             }
-        }
 
-        for (const file of this.getLogFiles()) {
-            if (file.size > maxSizeBytes) {
-                fs.unlinkSync(file.path);
-                deletedCount++;
+            for (const file of this.getLogFiles()) {
+                if (file.size > maxSizeBytes) {
+                    fs.unlinkSync(file.path);
+                    deletedCount++;
+                }
             }
-        }
 
-        if (deletedCount > 0) {
-            console.log(`Cleaned up ${deletedCount} old log files`);
+            if (deletedCount > 0) {
+                console.log(`Cleaned up ${deletedCount} old log files`);
+            }
+        } catch (error) {
+            console.error('Failed to cleanup old logs:', error);
         }
     }
 
     deleteLogFile(filePath: string): void {
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
+        try {
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        } catch (error) {
+            console.error('Failed to delete log file:', error);
         }
     }
 

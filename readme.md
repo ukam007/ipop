@@ -335,6 +335,28 @@ node test-modules.js
 
 ## 更新日志
 
+### v1.0.6 (2026-05-15)
+
+**修复问题**
+- **关键修复**：修正日志模块文件系统异常导致扩展激活失败
+- 修复 LogFileManager 和 SessionLogger 构造函数中未捕获异常
+- 所有文件系统操作添加异常捕获（mkdir/readdir/writeStream）
+- 懒加载机制：日志文件延迟到首次写入时创建
+
+**技术改进**
+- LogFileManager：构造函数不立即创建目录
+- SessionLogger：构造函数不立即创建文件
+- 异常捕获：ensureLogDir/getLogFiles/cleanupOldLogs添加try-catch
+- 懒加载：日志写入方法检查writeStream是否初始化
+
+**影响范围**
+- 修复前：日志目录权限问题导致所有命令失效
+- 修复后：即使日志失败，连接功能仍可正常使用
+
+**兼容性**
+- Windows：`%APPDATA%\ipop\logs` 权限问题兼容
+- macOS/Linux：Home目录权限问题兼容
+
 ### v1.0.5 (2026-05-15)
 
 **修复问题**
