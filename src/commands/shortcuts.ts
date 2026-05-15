@@ -60,15 +60,29 @@ export async function sendShortcut(shortcut: ShortcutCommand): Promise<void> {
         return;
     }
 
-    const terminalNames = terminals.map(t => t.name);
+    const ipopTerminals: vscode.Terminal[] = [];
+    const otherTerminals: vscode.Terminal[] = [];
+    
+    for (const t of terminals) {
+        if (t.name.includes('IPOP') || t.name.includes('Telnet')) {
+            ipopTerminals.push(t);
+        } else {
+            otherTerminals.push(t);
+        }
+    }
+
+    const terminalNames = terminals.map(t => ({
+        label: t.name,
+        description: ipopTerminals.includes(t) ? '(IPOP Terminal)' : '',
+        terminal: t
+    }));
+    
     const selected = await vscode.window.showQuickPick(terminalNames, {
         placeHolder: 'Select terminal to send command'
     });
 
     if (!selected) return;
 
-    const terminal = terminals.find(t => t.name === selected);
-    if (terminal) {
-        terminal.sendText(shortcut.command);
-    }
+    selected.terminal.show();
+    selected.terminal.sendText(shortcut.command);
 }

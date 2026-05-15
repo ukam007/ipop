@@ -31,10 +31,19 @@ export class TerminalManager implements vscode.Pseudoterminal {
     }
 
     handleInput(data: string): void {
-        if (data === '\r') {
-            if (this.client && this.client.isConnected()) {
-                this.client.send(this.inputBuffer);
+        if (this.status !== 'connected') {
+            if (data.charCodeAt(0) >= 32 || data === '\r') {
+                this.reconnect();
             }
+            return;
+        }
+
+        if (!this.client || !this.client.isConnected()) {
+            return;
+        }
+
+        if (data === '\r') {
+            this.client.send(this.inputBuffer);
             this.writeEmitter.fire('\r\n');
             this.inputBuffer = '';
         } else if (data === '\x7f' || data === '\b') {
@@ -43,10 +52,9 @@ export class TerminalManager implements vscode.Pseudoterminal {
                 this.writeEmitter.fire('\b \b');
             }
         } else if (data.charCodeAt(0) === 3) {
-            if (this.client && this.client.isConnected()) {
-                this.client.sendRaw('\x03');
-            }
+            this.client.sendRaw('\x03');
             this.writeEmitter.fire('^C\r\n');
+            this.inputBuffer = '';
         } else if (data.charCodeAt(0) >= 32) {
             this.inputBuffer += data;
             this.writeEmitter.fire(data);

@@ -75,11 +75,34 @@ export function getCompletionHelper(): TerminalCompletionHelper {
 }
 
 export async function triggerCompletion(): Promise<void> {
-    const terminals = vscode.window.terminals;
+    const stats = getCompletionHelper().getStats();
     
-    if (terminals.length === 0) {
-        vscode.window.showWarningMessage('No active terminal. Open a terminal first.');
+    if (stats.totalSymbols === 0) {
+        vscode.window.showWarningMessage('No symbols indexed. Add completion sources first.');
         return;
+    }
+
+    const ipopTerminals = vscode.window.terminals.filter(t => 
+        t.name.includes('IPOP') || t.name.includes('Telnet') || t.name.includes(':')
+    );
+    
+    if (ipopTerminals.length > 0) {
+        const terminalOptions = ipopTerminals.map(t => ({
+            label: t.name,
+            terminal: t
+        }));
+        terminalOptions.unshift({
+            label: 'Current Active Terminal',
+            terminal: vscode.window.activeTerminal || ipopTerminals[0]
+        });
+        
+        const selected = await vscode.window.showQuickPick(terminalOptions, {
+            placeHolder: 'Select terminal (or press Enter for active)'
+        });
+        
+        if (!selected) return;
+        
+        selected.terminal.show();
     }
 
     await getCompletionHelper().showCompletionPicker();
