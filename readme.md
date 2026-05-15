@@ -158,7 +158,7 @@ npx vsce package --skip-license --allow-missing-repository
   "ipop.telnet.defaultPort": 23,
   "ipop.telnet.defaultEncoding": "utf-8",
   "ipop.telnet.timeout": 30000,
-  "ipop.telnet.keepaliveInterval": 0           // 保活间隔(ms)，0=禁用
+  "ipop.telnet.keepaliveInterval": 10000          // 保活间隔(ms)，0=禁用
 }
 ```
 
@@ -175,7 +175,7 @@ npx vsce package --skip-license --allow-missing-repository
 | `defaultPort` | 默认端口 | `23` |
 | `defaultEncoding` | 默认编码 | `utf-8` |
 | `timeout` | 连接超时(ms) | `30000` |
-| `keepaliveInterval` | Telnet保活间隔(ms) | `0` (禁用) |
+| `keepaliveInterval` | Telnet保活间隔(ms) | `10000` (10秒) |
 
 ---
 

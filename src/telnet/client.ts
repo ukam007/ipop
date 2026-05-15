@@ -36,7 +36,7 @@ export class TelnetClient {
         encoding: Encoding,
         events: TelnetClientEvents,
         timeout = 10000,
-        keepaliveInterval = 0
+        keepaliveInterval = 10000
     ) {
         this.host = host;
         this.port = port;
