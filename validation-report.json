@@ -1,0 +1,94 @@
+{
+  "timestamp": "2026-05-15T02:20:29.429Z",
+  "server": {
+    "host": "127.0.0.1",
+    "port": 2323
+  },
+  "summary": {
+    "total": 16,
+    "passed": 15,
+    "failed": 1
+  },
+  "results": [
+    {
+      "name": "TCP Connection",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Welcome Banner",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Welcome Banner",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Welcome Banner",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Welcome Banner",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Welcome Banner",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Help Command",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Welcome Banner",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Help Command",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "TCP Connection",
+      "status": "FAIL",
+      "details": "write after end"
+    },
+    {
+      "name": "Ping Command",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Time Command",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Chinese Encoding",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Echo Command",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Quit Command",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Login Command",
+      "status": "PASS",
+      "details": ""
+    }
+  ]
+}
