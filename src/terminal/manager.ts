@@ -9,6 +9,13 @@ import {
     isAutoCompletionEnabled
 } from '../completion/terminal-filter';
 
+const ANSI_RESET = '\x1b[0m';
+const ANSI_GREEN = '\x1b[32m';
+const ANSI_RED = '\x1b[31m';
+const ANSI_YELLOW = '\x1b[33m';
+const ANSI_CYAN = '\x1b[36m';
+const ANSI_BOLD = '\x1b[1m';
+
 export class TerminalManager implements vscode.Pseudoterminal {
     private writeEmitter = new vscode.EventEmitter<string>();
     onDidWrite: vscode.Event<string> = this.writeEmitter.event;
@@ -73,7 +80,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
             }
         } else if (data.charCodeAt(0) === 3) {
             this.client.sendRaw('\x03');
-            this.writeEmitter.fire('^C\r\n');
+            this.writeEmitter.fire(`${ANSI_YELLOW}^C${ANSI_RESET}\r\n`);
             this.inputBuffer = '';
             this.hintShown = false;
             this.lastHintLength = 0;
@@ -87,7 +94,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
 
     private connect(): void {
         this.status = 'connecting';
-        this.writeEmitter.fire(`Connecting to ${this.connection.host}:${this.connection.port}...\r\n`);
+        this.writeEmitter.fire(`${ANSI_YELLOW}⏳ Connecting to ${this.connection.host}:${this.connection.port}...${ANSI_RESET}\r\n`);
 
         const config = vscode.workspace.getConfiguration('ipop.telnet');
         const timeout = config.get<number>('timeout', 30000);
@@ -100,10 +107,10 @@ export class TerminalManager implements vscode.Pseudoterminal {
             {
                 onConnect: () => {
                     this.status = 'connected';
-                    this.writeEmitter.fire(`Connected to ${this.connection.host}:${this.connection.port}\r\n`);
-                    this.writeEmitter.fire('Type commands and press Enter to send.\r\n');
+                    this.writeEmitter.fire(`${ANSI_GREEN}${ANSI_BOLD}✓ Connected to ${this.connection.host}:${this.connection.port}${ANSI_RESET}\r\n`);
+                    this.writeEmitter.fire(`${ANSI_CYAN}Type commands and press Enter to send.${ANSI_RESET}\r\n`);
                     if (keepaliveInterval > 0) {
-                        this.writeEmitter.fire(`Keepalive enabled (${keepaliveInterval}ms interval)\r\n`);
+                        this.writeEmitter.fire(`${ANSI_GREEN}Keepalive enabled (${keepaliveInterval}ms interval)${ANSI_RESET}\r\n`);
                     }
                 },
                 onDisconnect: () => {
@@ -112,16 +119,16 @@ export class TerminalManager implements vscode.Pseudoterminal {
                     
                     if (prevStatus === 'connected') {
                         this.writeEmitter.fire('\r\n');
-                        this.writeEmitter.fire('========================================\r\n');
-                        this.writeEmitter.fire(' Connection closed by remote host\r\n');
-                        this.writeEmitter.fire('========================================\r\n');
+                        this.writeEmitter.fire(`${ANSI_RED}${ANSI_BOLD}========================================${ANSI_RESET}\r\n`);
+                        this.writeEmitter.fire(`${ANSI_RED}${ANSI_BOLD}✗ Connection closed by remote host${ANSI_RESET}\r\n`);
+                        this.writeEmitter.fire(`${ANSI_RED}${ANSI_BOLD}========================================${ANSI_RESET}\r\n`);
                         this.writeEmitter.fire('\r\n');
-                        this.writeEmitter.fire('Possible reasons:\r\n');
+                        this.writeEmitter.fire(`${ANSI_YELLOW}Possible reasons:${ANSI_RESET}\r\n`);
                         this.writeEmitter.fire('  - Server idle timeout\r\n');
                         this.writeEmitter.fire('  - Network disconnection\r\n');
                         this.writeEmitter.fire('  - Server closed the session\r\n');
                         this.writeEmitter.fire('\r\n');
-                        this.writeEmitter.fire('Press any key to reconnect, or close terminal.\r\n');
+                        this.writeEmitter.fire(`${ANSI_CYAN}Press any key to reconnect, or close terminal.${ANSI_RESET}\r\n`);
                     }
                     this.client = undefined;
                 },
@@ -130,7 +137,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
                 },
                 onError: (error: Error) => {
                     this.writeEmitter.fire('\r\n');
-                    this.writeEmitter.fire(`Error: ${error.message}\r\n`);
+                    this.writeEmitter.fire(`${ANSI_RED}${ANSI_BOLD}✗ Error: ${error.message}${ANSI_RESET}\r\n`);
                     this.writeEmitter.fire('\r\n');
                 }
             },
@@ -172,7 +179,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
 
     private showCompletionHint(query: string, count: number): void {
         this.writeEmitter.fire('\r\n');
-        this.writeEmitter.fire(`💡 ${count} matches for "${query}" - Press TAB to complete\r\n`);
+        this.writeEmitter.fire(`${ANSI_YELLOW}💡 ${count} matches for "${query}" - Press TAB to complete${ANSI_RESET}\r\n`);
         this.writeEmitter.fire(`${this.connection.host}:${this.connection.port}> ${this.inputBuffer}`);
     }
 

@@ -12,13 +12,13 @@ export class ConnectionTreeItem extends vscode.TreeItem {
         this.tooltip = `${connection.name}\n${connection.host}:${connection.port}\nEncoding: ${connection.encoding}`;
         
         if (status === 'connected') {
-            this.iconPath = new vscode.ThemeIcon('check', new vscode.ThemeColor('charts.green'));
+            this.iconPath = new vscode.ThemeIcon('circle-filled', new vscode.ThemeColor('editorGutter.fgGreen'));
             this.contextValue = 'connection-connected';
         } else if (status === 'connecting') {
-            this.iconPath = new vscode.ThemeIcon('sync~spin');
+            this.iconPath = new vscode.ThemeIcon('sync~spin', new vscode.ThemeColor('editorGutter.fgYellow'));
             this.contextValue = 'connection-connecting';
         } else {
-            this.iconPath = new vscode.ThemeIcon('circle-outline');
+            this.iconPath = new vscode.ThemeIcon('circle-outline', new vscode.ThemeColor('disabledForeground'));
             this.contextValue = 'connection-disconnected';
         }
     }
@@ -30,7 +30,7 @@ export class ShortcutTreeItem extends vscode.TreeItem {
         
         this.description = shortcut.command;
         this.tooltip = `${shortcut.name}\n${shortcut.command}\n${shortcut.description || ''}`;
-        this.iconPath = new vscode.ThemeIcon('terminal');
+        this.iconPath = new vscode.ThemeIcon('terminal', new vscode.ThemeColor('terminal.ansiBlue'));
         this.contextValue = 'shortcut';
     }
 }
@@ -51,8 +51,8 @@ export class CompletionSourceTreeItem extends vscode.TreeItem {
         this.description = description;
         this.tooltip = `${source.name}\nType: ${source.type}\n${source.path || ''}`;
         this.iconPath = source.enabled 
-            ? new vscode.ThemeIcon('check', new vscode.ThemeColor('charts.green'))
-            : new vscode.ThemeIcon('circle-slash');
+            ? new vscode.ThemeIcon('check', new vscode.ThemeColor('editorGutter.fgGreen'))
+            : new vscode.ThemeIcon('circle-slash', new vscode.ThemeColor('disabledForeground'));
         this.contextValue = 'completion-source';
     }
 }
