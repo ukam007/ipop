@@ -4,22 +4,53 @@ import { initProviders } from './sidebar/provider';
 import { registerCommands } from './commands';
 import { registerCompletionProvider, registerCompletionCommands } from './completion/provider';
 import { getSymbolIndexer } from './completion/indexer';
+import { LogsViewProvider } from './logger';
 
 export function activate(context: vscode.ExtensionContext): void {
     initConfigStore(context);
     
     const providers = initProviders();
+    
+    const logsProvider = new LogsViewProvider();
 
     context.subscriptions.push(
         vscode.window.registerTreeDataProvider('ipop.connections', providers.connections),
         vscode.window.registerTreeDataProvider('ipop.shortcuts', providers.shortcuts),
         vscode.window.registerTreeDataProvider('ipop.completionSources', providers.completionSources),
+        vscode.window.registerTreeDataProvider('ipop.logs', logsProvider),
         registerCompletionProvider(),
         ...registerCommands(),
-        ...registerCompletionCommands()
+        ...registerCompletionCommands(),
+        ...registerLogCommands(logsProvider)
     );
 
     initSymbolIndexerInBackground();
+}
+
+function registerLogCommands(logsProvider: LogsViewProvider): vscode.Disposable[] {
+    const fileManager = logsProvider.getFileManager();
+
+    return [
+        vscode.commands.registerCommand('ipop.logs.open', (filePath: string) => {
+            fileManager.openLogFile(filePath);
+        }),
+        vscode.commands.registerCommand('ipop.logs.openDir', () => {
+            fileManager.openLogDir();
+        }),
+        vscode.commands.registerCommand('ipop.logs.delete', (filePath: string) => {
+            fileManager.deleteLogFile(filePath);
+            logsProvider.refresh();
+            vscode.window.showInformationMessage('Log file deleted');
+        }),
+        vscode.commands.registerCommand('ipop.logs.cleanup', () => {
+            fileManager.cleanupOldLogs();
+            logsProvider.refresh();
+            vscode.window.showInformationMessage('Old logs cleaned up');
+        }),
+        vscode.commands.registerCommand('ipop.logs.refresh', () => {
+            logsProvider.refresh();
+        })
+    ];
 }
 
 async function initSymbolIndexerInBackground(): Promise<void> {

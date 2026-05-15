@@ -8,6 +8,7 @@ import {
     isShowHintEnabled,
     isAutoCompletionEnabled
 } from '../completion/terminal-filter';
+import { SessionLogger } from '../logger';
 
 const ANSI_RESET = '\x1b[0m';
 const ANSI_GREEN = '\x1b[32m';
@@ -29,9 +30,25 @@ export class TerminalManager implements vscode.Pseudoterminal {
     private inputBuffer: string = '';
     private hintShown: boolean = false;
     private lastHintLength: number = 0;
+    private logger: SessionLogger | null = null;
 
     constructor(connection: TelnetConnection) {
         this.connection = connection;
+        
+        const logConfig = vscode.workspace.getConfiguration('ipop.logging');
+        if (logConfig.get<boolean>('enabled', true)) {
+            const logDir = logConfig.get<string>('path', '');
+            const defaultLogDir = this.getDefaultLogDir();
+            this.logger = new SessionLogger(connection, logDir || defaultLogDir);
+        }
+    }
+
+    private getDefaultLogDir(): string {
+        const appData = process.env.APPDATA || 
+                        (process.platform === 'darwin' 
+                            ? require('path').join(process.env.HOME || '', 'Library', 'Application Support')
+                            : require('path').join(process.env.HOME || '', '.config'));
+        return require('path').join(appData, 'ipop', 'logs');
     }
 
     open(_initialDimensions: vscode.TerminalDimensions | undefined): void {
@@ -42,6 +59,9 @@ export class TerminalManager implements vscode.Pseudoterminal {
         if (this.client && this.client.isConnected()) {
             this.client.disconnect();
             this.client = undefined;
+        }
+        if (this.logger) {
+            this.logger.close();
         }
         this.status = 'disconnected';
     }
@@ -64,6 +84,9 @@ export class TerminalManager implements vscode.Pseudoterminal {
         }
 
         if (data === '\r') {
+            if (this.logger) {
+                this.logger.logInput(this.inputBuffer);
+            }
             this.client.send(this.inputBuffer);
             this.writeEmitter.fire('\r\n');
             this.inputBuffer = '';
@@ -79,6 +102,9 @@ export class TerminalManager implements vscode.Pseudoterminal {
                 }
             }
         } else if (data.charCodeAt(0) === 3) {
+            if (this.logger) {
+                this.logger.logInput('^C');
+            }
             this.client.sendRaw('\x03');
             this.writeEmitter.fire(`${ANSI_YELLOW}^C${ANSI_RESET}\r\n`);
             this.inputBuffer = '';
@@ -107,6 +133,9 @@ export class TerminalManager implements vscode.Pseudoterminal {
             {
                 onConnect: () => {
                     this.status = 'connected';
+                    if (this.logger) {
+                        this.logger.logConnect(keepaliveInterval);
+                    }
                     this.writeEmitter.fire(`${ANSI_GREEN}${ANSI_BOLD}✓ Connected to ${this.connection.host}:${this.connection.port}${ANSI_RESET}\r\n`);
                     this.writeEmitter.fire(`${ANSI_CYAN}Type commands and press Enter to send.${ANSI_RESET}\r\n`);
                     if (keepaliveInterval > 0) {
@@ -118,6 +147,9 @@ export class TerminalManager implements vscode.Pseudoterminal {
                     this.status = 'disconnected';
                     
                     if (prevStatus === 'connected') {
+                        if (this.logger) {
+                            this.logger.logDisconnect('Connection closed by remote host');
+                        }
                         this.writeEmitter.fire('\r\n');
                         this.writeEmitter.fire(`${ANSI_RED}${ANSI_BOLD}========================================${ANSI_RESET}\r\n`);
                         this.writeEmitter.fire(`${ANSI_RED}${ANSI_BOLD}✗ Connection closed by remote host${ANSI_RESET}\r\n`);
@@ -133,9 +165,15 @@ export class TerminalManager implements vscode.Pseudoterminal {
                     this.client = undefined;
                 },
                 onData: (data: string) => {
+                    if (this.logger) {
+                        this.logger.logOutput(data);
+                    }
                     this.writeEmitter.fire(data);
                 },
                 onError: (error: Error) => {
+                    if (this.logger) {
+                        this.logger.logError(error);
+                    }
                     this.writeEmitter.fire('\r\n');
                     this.writeEmitter.fire(`${ANSI_RED}${ANSI_BOLD}✗ Error: ${error.message}${ANSI_RESET}\r\n`);
                     this.writeEmitter.fire('\r\n');

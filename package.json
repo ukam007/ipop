@@ -2,7 +2,7 @@
   "name": "ipop-telnet",
   "displayName": "IPOP Telnet Terminal",
   "description": "Telnet terminal with smart code completion for VSCode",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publisher": "ipop",
   "engines": {
     "vscode": "^1.85.0"
@@ -42,6 +42,10 @@
         {
           "id": "ipop.shortcuts",
           "name": "Shortcuts"
+        },
+        {
+          "id": "ipop.logs",
+          "name": "Session Logs"
         }
       ]
     },
@@ -117,6 +121,30 @@
       {
         "command": "ipop.completion.trigger",
         "title": "Search Symbols"
+      },
+      {
+        "command": "ipop.logs.open",
+        "title": "Open Log File",
+        "icon": "$(file-text)"
+      },
+      {
+        "command": "ipop.logs.openDir",
+        "title": "Open Log Directory",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "ipop.logs.delete",
+        "title": "Delete Log File",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "ipop.logs.cleanup",
+        "title": "Cleanup Old Logs"
+      },
+      {
+        "command": "ipop.logs.refresh",
+        "title": "Refresh Logs",
+        "icon": "$(refresh)"
       }
     ],
     "menus": {
@@ -134,6 +162,21 @@
         {
           "command": "ipop.completion.addSource",
           "when": "view == ipop.completionSources",
+          "group": "navigation"
+        },
+        {
+          "command": "ipop.logs.openDir",
+          "when": "view == ipop.logs",
+          "group": "navigation"
+        },
+        {
+          "command": "ipop.logs.cleanup",
+          "when": "view == ipop.logs",
+          "group": "navigation"
+        },
+        {
+          "command": "ipop.logs.refresh",
+          "when": "view == ipop.logs",
           "group": "navigation"
         }
       ],
@@ -182,6 +225,16 @@
           "command": "ipop.completion.removeSource",
           "when": "view == ipop.completionSources && viewItem == completion-source",
           "group": "2_delete"
+        },
+        {
+          "command": "ipop.logs.open",
+          "when": "view == ipop.logs && viewItem == log-file",
+          "group": "inline"
+        },
+        {
+          "command": "ipop.logs.delete",
+          "when": "view == ipop.logs && viewItem == log-file",
+          "group": "1_delete"
         }
       ]
     },
@@ -263,6 +316,36 @@
           "type": "number",
           "default": 10000,
           "description": "Telnet keepalive interval (ms, 0=disabled)"
+        },
+        "ipop.logging.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable session logging"
+        },
+        "ipop.logging.path": {
+          "type": "string",
+          "default": "",
+          "description": "Log directory path (empty = default location)"
+        },
+        "ipop.logging.maxFiles": {
+          "type": "number",
+          "default": 50,
+          "description": "Maximum number of log files to keep"
+        },
+        "ipop.logging.maxAge": {
+          "type": "number",
+          "default": 7,
+          "description": "Maximum age of log files in days"
+        },
+        "ipop.logging.maxSize": {
+          "type": "number",
+          "default": 10,
+          "description": "Maximum size of single log file in MB"
+        },
+        "ipop.logging.includeANSI": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include ANSI codes in log (true = raw data)"
         }
       }
     },

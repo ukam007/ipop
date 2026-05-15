@@ -129,6 +129,46 @@ npx vsce package --skip-license --allow-missing-repository
 
 ---
 
+## Session Logging
+
+IPOP automatically records terminal sessions for debugging and audit purposes.
+
+**日志文件命名**：
+```
+session-{连接名}-{IP}-{端口}-{日期}-{时间}.log
+```
+
+**示例**：
+- `session-Router-A-192.168.1.1-23-20260515-143025.log`
+- `session-Switch-B-192.168.2.1-2323-20260515-150130.log`
+
+**日志目录**：`%APPDATA%\ipop\logs` (Windows)
+
+**日志内容**：
+- 连接事件（连接/断开，含时间戳）
+- 用户输入命令
+- 服务器回显（保留ANSI颜色码）
+- 错误事件
+
+**日志管理**：
+- 自动清理：超过7天或超过50个文件自动删除
+- 查看日志：侧边栏"Session Logs"视图
+- 打开目录：命令 `ipop.logs.openDir`
+- 删除日志：右键菜单删除单个文件
+
+**配置项**：
+```json
+{
+  "ipop.logging.enabled": true,      // 日志开关
+  "ipop.logging.maxFiles": 50,       // 最大文件数
+  "ipop.logging.maxAge": 7,          // 保留天数
+  "ipop.logging.maxSize": 10,        // 单文件大小限制(MB)
+  "ipop.logging.includeANSI": true   // 保留ANSI码（原始数据）
+}
+```
+
+---
+
 ## 快捷键
 
 | 快捷键 | 功能 | 条件 |
@@ -176,6 +216,11 @@ npx vsce package --skip-license --allow-missing-repository
 | `defaultEncoding` | 默认编码 | `utf-8` |
 | `timeout` | 连接超时(ms) | `30000` |
 | `keepaliveInterval` | Telnet保活间隔(ms) | `10000` (10秒) |
+| `logging.enabled` | 日志开关 | `true` |
+| `logging.maxFiles` | 最大日志文件数 | `50` |
+| `logging.maxAge` | 日志保留天数 | `7` |
+| `logging.maxSize` | 单文件大小限制(MB) | `10` |
+| `logging.includeANSI` | 保留ANSI码 | `true` |
 
 ---
 
@@ -197,6 +242,11 @@ npx vsce package --skip-license --allow-missing-repository
 | `ipop.completion.removeSource` | 删除补全源 |
 | `ipop.completion.refreshIndex` | 刷新索引 |
 | `ipop.completion.addCustomSymbol` | 添加自定义符号 |
+| `ipop.logs.open` | 打开日志文件 |
+| `ipop.logs.openDir` | 打开日志目录 |
+| `ipop.logs.delete` | 删除日志文件 |
+| `ipop.logs.cleanup` | 清理旧日志 |
+| `ipop.logs.refresh` | 刷新日志列表 |
 
 ---
 
@@ -284,6 +334,32 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.4 (2026-05-15)
+
+**新增功能**
+- Session logging system：自动记录终端交互
+- 日志文件命名：`session-{name}-{IP}-{port}-{timestamp}.log`
+- 侧边栏"Session Logs"视图：浏览历史日志
+- 日志命令：open、openDir、delete、cleanup、refresh
+- 日志配置：enabled、path、maxFiles、maxAge、maxSize、includeANSI
+
+**日志记录内容**
+- 连接事件（含时间戳、keepalive参数）
+- 用户输入命令（完整命令）
+- 服务器回显（原始数据，保留ANSI码）
+- 错误事件
+
+**日志管理**
+- 自动清理旧日志（天数/数量/大小限制）
+- 侧边栏手动删除单个文件
+- 系统文件浏览器打开日志目录
+
+**技术实现**
+- 新增logger模块（5个文件）
+- SessionLogger核心类：WriteStream异步写入
+- LogFileManager文件管理：自动清理策略
+- LogsViewProvider视图：实时扫描logs目录
 
 ### v1.0.3 (2026-05-15)
 
