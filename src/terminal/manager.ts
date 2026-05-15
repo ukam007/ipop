@@ -91,6 +91,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
 
         const config = vscode.workspace.getConfiguration('ipop.telnet');
         const timeout = config.get<number>('timeout', 30000);
+        const keepaliveInterval = config.get<number>('keepaliveInterval', 0);
 
         this.client = new TelnetClient(
             this.connection.host,
@@ -101,21 +102,40 @@ export class TerminalManager implements vscode.Pseudoterminal {
                     this.status = 'connected';
                     this.writeEmitter.fire(`Connected to ${this.connection.host}:${this.connection.port}\r\n`);
                     this.writeEmitter.fire('Type commands and press Enter to send.\r\n');
+                    if (keepaliveInterval > 0) {
+                        this.writeEmitter.fire(`Keepalive enabled (${keepaliveInterval}ms interval)\r\n`);
+                    }
                 },
                 onDisconnect: () => {
+                    const prevStatus = this.status;
                     this.status = 'disconnected';
-                    this.writeEmitter.fire('\r\nConnection closed by remote host.\r\n');
-                    this.writeEmitter.fire('Press any key to reconnect, or close terminal to exit.\r\n');
+                    
+                    if (prevStatus === 'connected') {
+                        this.writeEmitter.fire('\r\n');
+                        this.writeEmitter.fire('========================================\r\n');
+                        this.writeEmitter.fire(' Connection closed by remote host\r\n');
+                        this.writeEmitter.fire('========================================\r\n');
+                        this.writeEmitter.fire('\r\n');
+                        this.writeEmitter.fire('Possible reasons:\r\n');
+                        this.writeEmitter.fire('  - Server idle timeout\r\n');
+                        this.writeEmitter.fire('  - Network disconnection\r\n');
+                        this.writeEmitter.fire('  - Server closed the session\r\n');
+                        this.writeEmitter.fire('\r\n');
+                        this.writeEmitter.fire('Press any key to reconnect, or close terminal.\r\n');
+                    }
                     this.client = undefined;
                 },
                 onData: (data: string) => {
                     this.writeEmitter.fire(data);
                 },
                 onError: (error: Error) => {
-                    this.writeEmitter.fire(`\r\nError: ${error.message}\r\n`);
+                    this.writeEmitter.fire('\r\n');
+                    this.writeEmitter.fire(`Error: ${error.message}\r\n`);
+                    this.writeEmitter.fire('\r\n');
                 }
             },
-            timeout
+            timeout,
+            keepaliveInterval
         );
 
         this.client.connect().catch((error: Error) => {

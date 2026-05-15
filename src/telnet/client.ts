@@ -10,6 +10,13 @@ const DO = 0xFD;
 const DONT = 0xFE;
 const SB = 0xFA;
 const SE = 0xF0;
+const NOP = 0xF0;
+
+const OPT_ECHO = 1;
+const OPT_SUPPRESS_GO_AHEAD = 3;
+const OPT_TIMING_MARK = 6;
+const OPT_TERMINAL_TYPE = 24;
+const OPT_WINDOW_SIZE = 31;
 
 export class TelnetClient {
     private socket: net.Socket | null = null;
@@ -20,19 +27,23 @@ export class TelnetClient {
     private host: string;
     private port: number;
     private timeout: number;
+    private keepaliveTimer: NodeJS.Timeout | null = null;
+    private keepaliveInterval: number = 0;
 
     constructor(
         host: string,
         port: number,
         encoding: Encoding,
         events: TelnetClientEvents,
-        timeout = 10000
+        timeout = 10000,
+        keepaliveInterval = 0
     ) {
         this.host = host;
         this.port = port;
         this.encoding = encoding;
         this.events = events;
         this.timeout = timeout;
+        this.keepaliveInterval = keepaliveInterval;
     }
 
     connect(): Promise<void> {
@@ -45,12 +56,20 @@ export class TelnetClient {
                 reject(new Error('Connection timeout'));
             }, this.timeout);
 
-            this.socket.on('connect', () => {
-                clearTimeout(timeoutId);
-                this.connected = true;
-                this.events.onConnect();
-                resolve();
-            });
+this.socket.on('connect', () => {
+            clearTimeout(timeoutId);
+            
+            if (this.socket) {
+                this.socket.setTimeout(0);
+            }
+            
+            this.connected = true;
+            this.events.onConnect();
+            
+            this.startKeepalive();
+            
+            resolve();
+        });
 
             this.socket.on('data', (data: Buffer) => {
                 this.handleData(data);
@@ -61,16 +80,20 @@ export class TelnetClient {
                 this.events.onError(err);
             });
 
-            this.socket.on('close', () => {
-                this.connected = false;
-                this.events.onDisconnect();
-            });
+this.socket.on('close', (hadError: boolean) => {
+            this.connected = false;
+            this.stopKeepalive();
+            if (hadError) {
+                this.events.onError(new Error('Connection closed with error'));
+            }
+            this.events.onDisconnect();
+        });
 
-            this.socket.on('timeout', () => {
-                clearTimeout(timeoutId);
-                this.socket?.destroy();
-                reject(new Error('Connection timeout'));
-            });
+        this.socket.on('timeout', () => {
+            clearTimeout(timeoutId);
+            this.socket?.destroy();
+            reject(new Error('Connection timeout'));
+        });
 
             this.socket.connect(this.port, this.host);
         });
@@ -130,13 +153,43 @@ export class TelnetClient {
     private handleTelnetCommand(cmd: number, option: number): void {
         if (!this.socket) return;
 
-        if (cmd === DO || cmd === DONT) {
-            const response = Buffer.from([IAC, WONT, option]);
-            this.socket.write(response);
-        } else if (cmd === WILL || cmd === WONT) {
-            const response = Buffer.from([IAC, DONT, option]);
-            this.socket.write(response);
+        if (cmd === DO) {
+            if (option === OPT_ECHO || option === OPT_SUPPRESS_GO_AHEAD) {
+                this.socket.write(Buffer.from([IAC, WILL, option]));
+            } else if (option === OPT_TIMING_MARK) {
+                this.socket.write(Buffer.from([IAC, WILL, option]));
+            } else if (option === OPT_WINDOW_SIZE) {
+                this.socket.write(Buffer.from([IAC, WILL, option]));
+                this.sendWindowSize();
+            } else {
+                this.socket.write(Buffer.from([IAC, WONT, option]));
+            }
+        } else if (cmd === DONT) {
+            this.socket.write(Buffer.from([IAC, WONT, option]));
+        } else if (cmd === WILL) {
+            if (option === OPT_ECHO) {
+                this.socket.write(Buffer.from([IAC, DO, option]));
+            } else if (option === OPT_SUPPRESS_GO_AHEAD) {
+                this.socket.write(Buffer.from([IAC, DO, option]));
+            } else {
+                this.socket.write(Buffer.from([IAC, DONT, option]));
+            }
+        } else if (cmd === WONT) {
+            this.socket.write(Buffer.from([IAC, DONT, option]));
         }
+    }
+
+    private sendWindowSize(): void {
+        if (!this.socket) return;
+        const width = 80;
+        const height = 24;
+        const buf = Buffer.from([
+            IAC, SB, OPT_WINDOW_SIZE,
+            0, width,
+            0, height,
+            IAC, SE
+        ]);
+        this.socket.write(buf);
     }
 
     send(data: string): void {
@@ -158,6 +211,7 @@ export class TelnetClient {
     }
 
     disconnect(): void {
+        this.stopKeepalive();
         if (this.socket) {
             this.socket.destroy();
             this.socket = null;
@@ -175,5 +229,22 @@ export class TelnetClient {
 
     getPort(): number {
         return this.port;
+    }
+
+    private startKeepalive(): void {
+        if (this.keepaliveInterval > 0 && this.socket) {
+            this.keepaliveTimer = setInterval(() => {
+                if (this.connected && this.socket) {
+                    this.socket.write(Buffer.from([IAC, NOP]));
+                }
+            }, this.keepaliveInterval);
+        }
+    }
+
+    private stopKeepalive(): void {
+        if (this.keepaliveTimer) {
+            clearInterval(this.keepaliveTimer);
+            this.keepaliveTimer = null;
+        }
     }
 }

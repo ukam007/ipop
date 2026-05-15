@@ -2,7 +2,7 @@
   "name": "ipop-telnet",
   "displayName": "IPOP Telnet Terminal",
   "description": "Telnet terminal with smart code completion for VSCode",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "ipop",
   "engines": {
     "vscode": "^1.85.0"
@@ -258,6 +258,11 @@
           "type": "number",
           "default": 30000,
           "description": "Connection timeout (ms)"
+        },
+        "ipop.telnet.keepaliveInterval": {
+          "type": "number",
+          "default": 0,
+          "description": "Telnet keepalive interval (ms, 0=disabled)"
         }
       }
     },

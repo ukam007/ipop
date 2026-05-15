@@ -157,7 +157,8 @@ npx vsce package --skip-license --allow-missing-repository
   // Telnet 配置
   "ipop.telnet.defaultPort": 23,
   "ipop.telnet.defaultEncoding": "utf-8",
-  "ipop.telnet.timeout": 30000
+  "ipop.telnet.timeout": 30000,
+  "ipop.telnet.keepaliveInterval": 0           // 保活间隔(ms)，0=禁用
 }
 ```
 
@@ -174,6 +175,7 @@ npx vsce package --skip-license --allow-missing-repository
 | `defaultPort` | 默认端口 | `23` |
 | `defaultEncoding` | 默认编码 | `utf-8` |
 | `timeout` | 连接超时(ms) | `30000` |
+| `keepaliveInterval` | Telnet保活间隔(ms) | `0` (禁用) |
 
 ---
 
@@ -282,6 +284,18 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.1 (2026-05-15)
+
+**新增功能**
+- Telnet 保活机制：支持配置 keepaliveInterval 发送 NOP 指令防止空闲断开
+- 改进的 Telnet 协商：支持 ECHO、SUPPRESS_GO_AHEAD、TIMING_MARK 等选项
+- 增强的断开消息：详细显示断开原因和解决建议
+
+**修复问题**
+- **关键修复**：禁用 Socket 空闲超时，解决 1-5 分钟无数据传输后自动断开问题
+- 改进连接断开提示信息
+- 优化 Telnet 协议协商处理
 
 ### v1.0.0 (2026-05-15)
 
