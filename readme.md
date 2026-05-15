@@ -335,6 +335,21 @@ node test-modules.js
 
 ## 更新日志
 
+### v1.0.5 (2026-05-15)
+
+**修复问题**
+- **关键修复**：修正 manager.ts 中 `require('path')` 导致扩展加载失败的问题
+- 替换动态 require 为静态 import，符合 VSCode 扩展规范
+- 修复所有 `ipop.xxx` 命令报错 "not found" 的问题
+
+**技术改进**
+- 添加 `import * as path from 'path'` 顶层导入
+- getDefaultLogDir 方法使用静态导入的 path 模块
+
+**影响范围**
+- 修复前：所有命令失效（无法连接、无法创建连接等）
+- 修复后：所有功能恢复正常
+
 ### v1.0.4 (2026-05-15)
 
 **新增功能**

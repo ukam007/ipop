@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { TelnetClient } from '../telnet/client';
 import { TelnetConnection, ConnectionStatus } from '../types';
 import { getTabHelper } from '../completion/provider';
@@ -46,9 +47,9 @@ export class TerminalManager implements vscode.Pseudoterminal {
     private getDefaultLogDir(): string {
         const appData = process.env.APPDATA || 
                         (process.platform === 'darwin' 
-                            ? require('path').join(process.env.HOME || '', 'Library', 'Application Support')
-                            : require('path').join(process.env.HOME || '', '.config'));
-        return require('path').join(appData, 'ipop', 'logs');
+                            ? path.join(process.env.HOME || '', 'Library', 'Application Support')
+                            : path.join(process.env.HOME || '', '.config'));
+        return path.join(appData, 'ipop', 'logs');
     }
 
     open(_initialDimensions: vscode.TerminalDimensions | undefined): void {
