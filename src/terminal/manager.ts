@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { TelnetClient } from '../telnet/client';
 import { TelnetConnection, ConnectionStatus } from '../types';
+import { getTabHelper } from '../completion/provider';
+import { isTabCompletionEnabled, getMinTriggerChars } from '../completion/terminal-filter';
 
 export class TerminalManager implements vscode.Pseudoterminal {
     private writeEmitter = new vscode.EventEmitter<string>();
@@ -39,6 +41,11 @@ export class TerminalManager implements vscode.Pseudoterminal {
         }
 
         if (!this.client || !this.client.isConnected()) {
+            return;
+        }
+
+        if (data === '\t') {
+            this.handleTabCompletion();
             return;
         }
 
@@ -108,6 +115,41 @@ export class TerminalManager implements vscode.Pseudoterminal {
         }
     }
 
+    private async handleTabCompletion(): Promise<void> {
+        if (!isTabCompletionEnabled()) {
+            return;
+        }
+
+        const query = this.inputBuffer;
+        const minChars = getMinTriggerChars();
+
+        if (query.length < minChars) {
+            this.writeEmitter.fire('\r\n');
+            this.writeEmitter.fire(`Tab completion requires at least ${minChars} characters\r\n`);
+            this.writeEmitter.fire(`${this.connection.host}:${this.connection.port}> `);
+            return;
+        }
+
+        this.writeEmitter.fire('\r\n');
+        this.writeEmitter.fire(`Searching: "${query}"...\r\n`);
+
+        try {
+            const insertText = await getTabHelper().showCompletionPicker(query);
+
+            if (insertText) {
+                this.inputBuffer = insertText;
+                this.writeEmitter.fire(`Completed: ${insertText}\r\n`);
+                this.writeEmitter.fire(`${this.connection.host}:${this.connection.port}> ${insertText}`);
+            } else {
+                this.writeEmitter.fire('No selection made\r\n');
+                this.writeEmitter.fire(`${this.connection.host}:${this.connection.port}> ${query}`);
+            }
+        } catch (error) {
+            this.writeEmitter.fire(`Completion error: ${error}\r\n`);
+            this.writeEmitter.fire(`${this.connection.host}:${this.connection.port}> ${query}`);
+        }
+    }
+
     disconnect(): void {
         if (this.client) {
             this.client.disconnect();
@@ -140,6 +182,14 @@ export class TerminalManager implements vscode.Pseudoterminal {
 
     getInputBuffer(): string {
         return this.inputBuffer;
+    }
+
+    setInputBuffer(text: string): void {
+        this.inputBuffer = text;
+    }
+
+    clearInputBuffer(): void {
+        this.inputBuffer = '';
     }
 }
 

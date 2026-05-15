@@ -1,132 +1,212 @@
 import * as vscode from 'vscode';
-import { SymbolInfo } from '../types';
+import { SymbolInfo, SYMBOL_KIND_TO_VSCODE } from '../types';
 import { getSymbolIndexer } from './indexer';
+import { 
+    isIPOPTerminal, 
+    getActiveIPOPTerminal, 
+    shouldTriggerCompletion,
+    getMinTriggerChars,
+    isAutoCompletionEnabled,
+    isTabCompletionEnabled
+} from './terminal-filter';
 
-export class TerminalCompletionHelper {
-    private lastQuery: string = '';
-
-    async showCompletionPicker(query?: string): Promise<void> {
-        const config = vscode.workspace.getConfiguration('ipop.completion');
-        
-        if (!config.get<boolean>('enableAutoComplete', true)) {
-            vscode.window.showWarningMessage('Auto-completion is disabled in settings');
-            return;
+export class IPOPCompletionProvider {
+    async provideTerminalCompletionItems(
+        context: { terminal: vscode.Terminal; commandLine: { text: string } },
+        token: vscode.CancellationToken
+    ): Promise<vscode.CompletionItem[] | undefined> {
+        if (!isAutoCompletionEnabled()) {
+            return undefined;
         }
+        
+        if (!shouldTriggerCompletion(context.terminal)) {
+            return undefined;
+        }
+        
+        const indexer = getSymbolIndexer();
+        const stats = indexer.getStats();
+        
+        if (stats.totalSymbols === 0) {
+            return undefined;
+        }
+        
+        const inputText = context.commandLine.text.trim();
+        const minChars = getMinTriggerChars();
+        
+        if (inputText.length < minChars) {
+            return undefined;
+        }
+        
+        if (token.isCancellationRequested) {
+            return undefined;
+        }
+        
+        const results = indexer.search(inputText);
+        
+        if (results.length === 0) {
+            return undefined;
+        }
+        
+        const config = vscode.workspace.getConfiguration('ipop.completion');
+        const maxResults = config.get<number>('maxResults', 20);
+        const limitedResults = results.slice(0, maxResults);
+        
+        return limitedResults.map(symbol => this.createCompletionItem(symbol));
+    }
+    
+    private createCompletionItem(symbol: SymbolInfo): vscode.CompletionItem {
+        const item = new vscode.CompletionItem(symbol.name);
+        item.kind = SYMBOL_KIND_TO_VSCODE[symbol.kind] || vscode.CompletionItemKind.Function;
+        item.detail = symbol.detail || '';
+        item.documentation = symbol.filePath 
+            ? `${symbol.filePath}:${symbol.line || 0}` 
+            : undefined;
+        item.insertText = symbol.insertText;
+        return item;
+    }
+}
 
+export class TabCompletionHelper {
+    private lastQuery: string = '';
+    
+    async showCompletionPicker(query: string): Promise<string | undefined> {
         const indexer = getSymbolIndexer();
         const stats = indexer.getStats();
         
         if (stats.totalSymbols === 0) {
             vscode.window.showWarningMessage('No symbols indexed. Add completion sources first.');
-            return;
+            return undefined;
         }
-
-        const searchQuery = query || await vscode.window.showInputBox({
-            prompt: 'Search symbols',
-            placeHolder: 'Enter partial symbol name (e.g., "get", "init")',
-            value: this.lastQuery
-        });
-
-        if (!searchQuery) return;
         
-        this.lastQuery = searchQuery;
-
-        const results = indexer.search(searchQuery);
-
+        this.lastQuery = query;
+        
+        const results = indexer.search(query);
+        
         if (results.length === 0) {
-            vscode.window.showInformationMessage(`No symbols matching "${searchQuery}"`);
-            return;
+            vscode.window.showInformationMessage(`No symbols matching "${query}"`);
+            return undefined;
         }
-
+        
         const items = results.map(s => ({
             label: s.name,
             description: s.detail || '',
             detail: s.filePath ? `${s.filePath}:${s.line || 0}` : `Source: ${s.sourceId}`,
             symbol: s
         }));
-
+        
         const selected = await vscode.window.showQuickPick(items, {
-            placeHolder: `Found ${results.length} symbols. Select to insert.`,
+            placeHolder: `Tab Completion: ${results.length} matches for "${query}"`,
             matchOnDescription: true,
             matchOnDetail: true
         });
-
-        if (selected && vscode.window.activeTerminal) {
-            vscode.window.activeTerminal.sendText(selected.symbol.insertText);
+        
+        if (selected) {
+            return selected.symbol.insertText;
         }
+        
+        return undefined;
     }
-
-    searchSymbols(query: string): SymbolInfo[] {
-        return getSymbolIndexer().search(query);
-    }
-
+    
     getStats(): { totalSymbols: number } {
         return getSymbolIndexer().getStats();
     }
 }
 
-let helper: TerminalCompletionHelper | undefined;
+let completionProvider: IPOPCompletionProvider | undefined;
+let tabHelper: TabCompletionHelper | undefined;
 
-export function getCompletionHelper(): TerminalCompletionHelper {
-    if (!helper) {
-        helper = new TerminalCompletionHelper();
+export function getCompletionProvider(): IPOPCompletionProvider {
+    if (!completionProvider) {
+        completionProvider = new IPOPCompletionProvider();
     }
-    return helper;
+    return completionProvider;
+}
+
+export function getTabHelper(): TabCompletionHelper {
+    if (!tabHelper) {
+        tabHelper = new TabCompletionHelper();
+    }
+    return tabHelper;
 }
 
 export async function triggerCompletion(): Promise<void> {
-    const stats = getCompletionHelper().getStats();
+    if (!isTabCompletionEnabled()) {
+        vscode.window.showWarningMessage('Tab completion is disabled in settings');
+        return;
+    }
+    
+    const stats = getTabHelper().getStats();
     
     if (stats.totalSymbols === 0) {
         vscode.window.showWarningMessage('No symbols indexed. Add completion sources first.');
         return;
     }
-
-    const ipopTerminals = vscode.window.terminals.filter(t => 
-        t.name.includes('IPOP') || t.name.includes('Telnet') || t.name.includes(':')
-    );
     
-    if (ipopTerminals.length > 0) {
-        const terminalOptions = ipopTerminals.map(t => ({
-            label: t.name,
-            terminal: t
-        }));
-        terminalOptions.unshift({
-            label: 'Current Active Terminal',
-            terminal: vscode.window.activeTerminal || ipopTerminals[0]
-        });
-        
-        const selected = await vscode.window.showQuickPick(terminalOptions, {
-            placeHolder: 'Select terminal (or press Enter for active)'
-        });
-        
-        if (!selected) return;
-        
-        selected.terminal.show();
+    const activeTerminal = getActiveIPOPTerminal();
+    
+    if (!activeTerminal) {
+        vscode.window.showWarningMessage('No active IPOP terminal');
+        return;
     }
-
-    await getCompletionHelper().showCompletionPicker();
+    
+    activeTerminal.show();
+    
+    const query = await vscode.window.showInputBox({
+        prompt: 'Search symbols for completion',
+        placeHolder: 'Enter partial symbol name (e.g., "get", "init")',
+        value: ''
+    });
+    
+    if (!query) return;
+    
+    const insertText = await getTabHelper().showCompletionPicker(query);
+    
+    if (insertText && activeTerminal) {
+        activeTerminal.sendText(insertText);
+    }
 }
 
-export async function quickCompletion(): Promise<void> {
-    const stats = getCompletionHelper().getStats();
+export async function quickCompletion(query?: string): Promise<string | undefined> {
+    if (!isTabCompletionEnabled()) {
+        return undefined;
+    }
+    
+    const stats = getTabHelper().getStats();
     
     if (stats.totalSymbols === 0) {
-        vscode.window.showWarningMessage('No symbols indexed. Add completion sources first.');
-        return;
+        return undefined;
     }
-
-    if (!vscode.window.activeTerminal) {
-        vscode.window.showWarningMessage('No active terminal');
-        return;
+    
+    if (query && query.length >= getMinTriggerChars()) {
+        return await getTabHelper().showCompletionPicker(query);
     }
+    
+    return undefined;
+}
 
-    await getCompletionHelper().showCompletionPicker();
+export function registerCompletionProvider(): vscode.Disposable {
+    const provider = getCompletionProvider();
+    
+    try {
+        const vscodeWindow = vscode.window as any;
+        if (vscodeWindow.registerTerminalCompletionItemProvider) {
+            return vscodeWindow.registerTerminalCompletionItemProvider('ipop', {
+                provideTerminalCompletionItems: (context: any, token: vscode.CancellationToken) => {
+                    return provider.provideTerminalCompletionItems(context, token);
+                }
+            });
+        }
+    } catch (e) {
+        console.log('TerminalCompletionItemProvider not available, using fallback');
+    }
+    
+    return new vscode.Disposable(() => {});
 }
 
 export function registerCompletionCommands(): vscode.Disposable[] {
     return [
         vscode.commands.registerCommand('ipop.completion.trigger', triggerCompletion),
-        vscode.commands.registerCommand('ipop.completion.quick', quickCompletion)
+        vscode.commands.registerCommand('ipop.completion.quick', 
+            (query?: string) => quickCompletion(query))
     ];
 }

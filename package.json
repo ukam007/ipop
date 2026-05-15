@@ -193,6 +193,31 @@
           "default": true,
           "description": "Enable terminal auto-completion"
         },
+        "ipop.completion.autoTrigger": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable auto-completion when typing (VSCode 1.85+)"
+        },
+        "ipop.completion.tabTrigger": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Tab key completion trigger"
+        },
+        "ipop.completion.minChars": {
+          "type": "number",
+          "default": 2,
+          "description": "Minimum characters to trigger completion"
+        },
+        "ipop.completion.scope": {
+          "type": "string",
+          "default": "ipop",
+          "enum": ["ipop", "all"],
+          "enumDescriptions": [
+            "Only IPOP terminals",
+            "All VSCode terminals"
+          ],
+          "description": "Completion scope"
+        },
         "ipop.completion.triggerDelay": {
           "type": "number",
           "default": 100,

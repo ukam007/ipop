@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { initConfigStore } from './config/store';
 import { initProviders } from './sidebar/provider';
 import { registerCommands } from './commands';
-import { registerCompletionCommands } from './completion/provider';
+import { registerCompletionProvider, registerCompletionCommands } from './completion/provider';
 import { getSymbolIndexer } from './completion/indexer';
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -14,6 +14,7 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.window.registerTreeDataProvider('ipop.connections', providers.connections),
         vscode.window.registerTreeDataProvider('ipop.shortcuts', providers.shortcuts),
         vscode.window.registerTreeDataProvider('ipop.completionSources', providers.completionSources),
+        registerCompletionProvider(),
         ...registerCommands(),
         ...registerCompletionCommands()
     );
