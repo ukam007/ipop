@@ -22,7 +22,10 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 - ✅ 模糊搜索，快速匹配
 - ✅ 三种补全源：Workspace、External、Custom
 - ✅ 符号索引持久化存储
+- ✅ **自动补全**（输入 >= 2 字符自动触发）
+- ✅ **Tab 键补全**（按 Tab 显示补全列表）
 - ✅ 手动触发（Ctrl+Shift+Space）
+- ✅ 仅 IPOP 终端生效（可配置）
 
 ### 快捷命令
 - ✅ 预设常用命令库
@@ -106,10 +109,21 @@ npx vsce package --skip-license --allow-missing-repository
 
 ### 4. 使用补全
 
-1. 打开 IPOP 终端
-2. 按 **Ctrl+Shift+Space**
-3. 输入搜索词（如：`get`、`init`）
-4. 选择匹配结果自动插入
+#### 方式一：自动补全（VSCode 1.85+）
+1. 在 IPOP 终端输入 >= 2 字符
+2. 自动弹出补全列表
+3. Tab 键选择，Enter 键确认
+
+#### 方式二：Tab 键触发
+1. 在 IPOP 终端输入 >= 2 字符
+2. 按 **Tab** 键
+3. 弹出补全列表
+4. 选择补全项自动插入
+
+#### 方式三：手动触发
+1. 按 **Ctrl+Shift+Space**
+2. 输入搜索词（如：`get`、`init`）
+3. 选择匹配结果自动插入
 
 ### 5. 快捷命令
 
@@ -125,7 +139,9 @@ npx vsce package --skip-license --allow-missing-repository
 | 快捷键 | 功能 | 条件 |
 |--------|------|------|
 | `Ctrl+Shift+Space` | 搜索符号 | 终端焦点 |
+| `Tab` | 触发补全 | IPOP 终端，输入 >= 2 字符 |
 | `Ctrl+C` | 中断信号 | 终端中 |
+| `Enter` | 发送命令 | 终端中 |
 
 ---
 
@@ -136,9 +152,12 @@ npx vsce package --skip-license --allow-missing-repository
 ```json
 {
   // 补全配置
-  "ipop.completion.enableAutoComplete": true,
-  "ipop.completion.triggerDelay": 100,
-  "ipop.completion.maxResults": 20,
+  "ipop.completion.autoTrigger": true,        // 自动补全开关
+  "ipop.completion.tabTrigger": true,         // Tab键补全开关
+  "ipop.completion.minChars": 2,              // 最小触发字符数
+  "ipop.completion.scope": "ipop",            // 补全范围：ipop/all
+  "ipop.completion.maxResults": 20,           // 最大结果数
+  "ipop.completion.triggerDelay": 100,        // 触发延迟(ms)
 
   // Telnet 配置
   "ipop.telnet.defaultPort": 23,
@@ -149,9 +168,12 @@ npx vsce package --skip-license --allow-missing-repository
 
 | 配置项 | 说明 | 默认值 |
 |--------|------|--------|
-| `enableAutoComplete` | 启用补全 | `true` |
-| `triggerDelay` | 补全延迟(ms) | `100` |
+| `autoTrigger` | 自动补全开关 | `true` |
+| `tabTrigger` | Tab键补全开关 | `true` |
+| `minChars` | 最小触发字符数 | `2` |
+| `scope` | 补全范围（ipop/all） | `ipop` |
 | `maxResults` | 最大结果数 | `20` |
+| `triggerDelay` | 补全延迟(ms) | `100` |
 | `defaultPort` | 默认端口 | `23` |
 | `defaultEncoding` | 默认编码 | `utf-8` |
 | `timeout` | 连接超时(ms) | `30000` |
@@ -171,6 +193,7 @@ npx vsce package --skip-license --allow-missing-repository
 | `ipop.deleteShortcut` | 删除快捷命令 |
 | `ipop.sendShortcut` | 发送快捷命令 |
 | `ipop.completion.trigger` | 搜索符号 |
+| `ipop.completion.quick` | 快速补全 |
 | `ipop.completion.addSource` | 添加补全源 |
 | `ipop.completion.removeSource` | 删除补全源 |
 | `ipop.completion.refreshIndex` | 刷新索引 |
@@ -254,7 +277,7 @@ node test-modules.js
 
 ## 已知限制
 
-1. **补全触发方式**：手动触发，非实时自动补全
+1. **自动补全 API**：VSCode 1.85+ 才支持 TerminalCompletionItemProvider，旧版本仅支持 Tab 键触发
 2. **语言支持**：当前仅支持 C/C++ 符号解析
 3. **大文件索引**：大型代码库索引可能耗时较长
 4. **Telnet 协议**：基础实现，复杂协商选项未完全支持
@@ -269,14 +292,18 @@ node test-modules.js
 - Telnet 连接管理
 - 多编码支持 (UTF-8/GBK/GB2312/Big5)
 - C/C++ 符号智能补全
+- **自动补全**（输入 >= 2 字符自动触发）
+- **Tab 键补全**（按 Tab 显示补全列表）
 - 快捷命令功能
 - 侧边栏 UI
+- 补全源管理（Workspace/External/Custom）
 
 **修复问题**
 - 终端激活阻塞问题
 - 连接稳定性改进
 - 断线重连支持
 - 输入处理优化
+- Tab 键响应处理
 
 ---
 
