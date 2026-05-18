@@ -93,6 +93,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
             if (this.logger) {
                 this.logger.logInput(this.inputBuffer);
             }
+            this.writeEmitter.fire('\r\n');
             this.client.send(this.inputBuffer);
             this.inputBuffer = '';
             this.hintShown = false;

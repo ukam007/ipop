@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.10-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.11-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.10.vsix` 文件
+1. 下载 `ipop-telnet-1.0.11.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -334,6 +334,22 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.11 (2026-05-18)
+
+**修复问题**
+- **关键修复**：修复命令输出无换行问题
+- 服务器响应添加 `\r\n` 换行符（time/ping/chinese/echo 命令）
+- 客户端发送命令后添加换行，分离用户输入和服务器输出
+
+**技术改进**
+- 服务器：time/ping/chinese 响应添加 `\r\n`
+- 服务器：echo 命令逻辑修正
+- 客户端：Enter 时先显示 `\r\n` 再发送命令
+
+**影响范围**
+- 修复前：`127.0.0.1:2323> timeCurrent time: xxx127.0.0.1:2323>`
+- 修复后：正确的换行显示，命令和提示符分行显示
 
 ### v1.0.10 (2026-05-18)
 

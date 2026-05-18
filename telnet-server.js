@@ -24,9 +24,9 @@ const commands = {
   Connections: ${server.connections || 0}
   Uptime: ${process.uptime().toFixed(2)}s
 `,
-    'time': () => `Current time: ${new Date().toISOString()}`,
-    'ping': () => 'PONG!',
-    'chinese': () => '中文测试: 你好世界 Hello World 中文支持',
+    'time': () => `Current time: ${new Date().toISOString()}\r\n`,
+    'ping': () => 'PONG!\r\n',
+    'chinese': () => '中文测试: 你好世界 Hello World 中文支持\r\n',
     'clear': () => '\x1b[2J\x1b[H',
     'quit': (client) => {
         client.write('Goodbye!\r\n');
@@ -55,7 +55,7 @@ function handleCommand(data, client) {
     const args = parts.slice(1);
 
     if (cmd === 'echo') {
-        return args.join(' ') || '(empty)' + '\r\n';
+        return (args.join(' ') || '(empty)') + '\r\n';
     }
     
     if (cmd === 'repeat') {
