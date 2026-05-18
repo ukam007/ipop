@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.16-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.17-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.16.vsix` 文件
+1. 下载 `ipop-telnet-1.0.17.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -174,7 +174,8 @@ session-{连接名}-{IP}-{端口}-{日期}-{时间}.log
 | 快捷键 | 功能 | 条件 |
 |--------|------|------|
 | `Ctrl+Shift+Space` | 搜索符号 | 终端焦点 |
-| `Tab` | 触发补全 | IPOP 终端，输入 >= 2 字符 |
+| `Tab` | 触发补全列表 | IPOP 终端，输入 >= 2 字符 |
+| `↑` / `↓` | 循环补全 | IPOP 终端，输入 >= 2 字符 |
 | `Ctrl+C` | 中断信号 | 终端中 |
 | `Enter` | 发送命令 | 终端中 |
 
@@ -334,6 +335,35 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.17 (2026-05-18)
+
+**新增智能补全功能**
+- **命令历史记录**：自动记录用户输入的命令，按使用频率排序
+- **上下箭头循环补全**：输入 ≥2 字符后，按 ↑↓ 键循环切换匹配项
+- **频率优先排序**：常用命令优先显示，带 `★` 标记和次数
+- **改进模糊搜索**：阈值调整为 0.3，匹配更精准
+
+**交互方式**
+| 操作 | 说明 |
+|------|------|
+| ↑/↓ 键 | 输入后按上下箭头循环补全 |
+| Tab 键 | 打开完整选择列表 |
+| 输入提示 | 显示匹配数量和最佳预览 |
+
+**示例**
+```
+输入: fu
+提示: 💡 5 matches → funcA
+按↓键: funcB → funcC → ...
+按↑键: ... → funcC → funcB → funcA
+```
+
+**历史记录特性**
+- 自动保存到 VSCode globalState（跨会话保留）
+- 最大保存 500 条命令
+- 自动清理旧记录（保留高频使用）
+- 显示使用次数：`★ Used 15 times`
 
 ### v1.0.16 (2026-05-18)
 

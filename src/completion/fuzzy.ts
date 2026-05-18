@@ -1,15 +1,22 @@
 import Fuse from 'fuse.js';
 import { SymbolInfo, FuzzyMatchResult } from '../types';
 
+interface SymbolWithFrequency extends SymbolInfo {
+    frequency?: number;
+}
+
 export class FuzzySearcher {
-    private fuse: Fuse<SymbolInfo> | null = null;
-    private symbols: SymbolInfo[] = [];
+    private fuse: Fuse<SymbolWithFrequency> | null = null;
+    private symbols: SymbolWithFrequency[] = [];
 
     updateIndex(symbols: SymbolInfo[]): void {
-        this.symbols = symbols;
-        this.fuse = new Fuse(symbols, {
+        this.symbols = symbols.map(s => ({
+            ...s,
+            frequency: (s as any).frequency || 0
+        }));
+        this.fuse = new Fuse(this.symbols, {
             keys: ['name'],
-            threshold: 0.4,
+            threshold: 0.3,
             distance: 100,
             includeScore: true,
             includeMatches: true,
@@ -19,7 +26,13 @@ export class FuzzySearcher {
             sortFn: (a, b) => {
                 const scoreA = a.score || 1;
                 const scoreB = b.score || 1;
-                return scoreA - scoreB;
+                const freqA = (a.item as any).frequency || 0;
+                const freqB = (b.item as any).frequency || 0;
+                
+                const finalA = scoreA * 0.6 - freqA * 0.004;
+                const finalB = scoreB * 0.6 - freqB * 0.004;
+                
+                return finalA - finalB;
             }
         });
     }
@@ -36,6 +49,26 @@ export class FuzzySearcher {
             score: result.score || 0,
             indices: [...(result.matches?.[0]?.indices || [])] as [number, number][]
         }));
+    }
+
+    searchWithHistory(query: string, maxResults = 20): FuzzyMatchResult[] {
+        if (!query.trim()) {
+            return [];
+        }
+
+        const fuzzyResults = this.search(query, maxResults);
+        
+        fuzzyResults.sort((a, b) => {
+            const freqA = (a.item as SymbolWithFrequency).frequency || 0;
+            const freqB = (b.item as SymbolWithFrequency).frequency || 0;
+            
+            const scoreA = a.score - freqA * 0.01;
+            const scoreB = b.score - freqB * 0.01;
+            
+            return scoreA - scoreB;
+        });
+
+        return fuzzyResults.slice(0, maxResults);
     }
 
     prefixMatch(query: string, maxResults = 20): SymbolInfo[] {

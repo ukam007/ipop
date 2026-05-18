@@ -3,11 +3,13 @@ import { initConfigStore } from './config/store';
 import { initProviders } from './sidebar/provider';
 import { registerCommands } from './commands';
 import { registerCompletionProvider, registerCompletionCommands } from './completion/provider';
+import { initHistory } from './completion/history';
 import { getSymbolIndexer } from './completion/indexer';
 import { LogsViewProvider } from './logger';
 
 export function activate(context: vscode.ExtensionContext): void {
     initConfigStore(context);
+    initHistory(context);
     
     const providers = initProviders();
     

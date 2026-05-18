@@ -3,6 +3,7 @@ import * as path from 'path';
 import { TelnetClient } from '../telnet/client';
 import { TelnetConnection, ConnectionStatus } from '../types';
 import { getTabHelper } from '../completion/provider';
+import { getHistory } from '../completion/history';
 import { 
     isTabCompletionEnabled, 
     getMinTriggerChars, 
@@ -17,6 +18,7 @@ const ANSI_RED = '\x1b[31m';
 const ANSI_YELLOW = '\x1b[33m';
 const ANSI_CYAN = '\x1b[36m';
 const ANSI_BOLD = '\x1b[1m';
+const ANSI_DIM = '\x1b[2m';
 
 export class TerminalManager implements vscode.Pseudoterminal {
     private writeEmitter = new vscode.EventEmitter<string>();
@@ -32,6 +34,9 @@ export class TerminalManager implements vscode.Pseudoterminal {
     private hintShown: boolean = false;
     private lastHintLength: number = 0;
     private logger: SessionLogger | null = null;
+    private inlineCompletionMode: boolean = false;
+    private originalInput: string = '';
+    private escapeBuffer: string = '';
 
     constructor(connection: TelnetConnection) {
         this.connection = connection;
@@ -84,6 +89,11 @@ export class TerminalManager implements vscode.Pseudoterminal {
             return;
         }
 
+        if (data.startsWith('\x1b')) {
+            this.handleEscapeSequence(data);
+            return;
+        }
+
         if (data === '\t') {
             this.handleTabCompletion();
             return;
@@ -93,11 +103,15 @@ export class TerminalManager implements vscode.Pseudoterminal {
             if (this.logger) {
                 this.logger.logInput(this.inputBuffer);
             }
+            try {
+                getHistory().recordCommand(this.inputBuffer, 'user');
+            } catch {}
             this.writeEmitter.fire('\r\n');
             this.client.send(this.inputBuffer);
             this.inputBuffer = '';
             this.hintShown = false;
             this.lastHintLength = 0;
+            this.inlineCompletionMode = false;
         } else if (data === '\x7f' || data === '\b') {
             if (this.inputBuffer.length > 0) {
                 this.inputBuffer = this.inputBuffer.slice(0, -1);
@@ -106,6 +120,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
                 if (this.inputBuffer.length < this.lastHintLength) {
                     this.hintShown = false;
                 }
+                this.inlineCompletionMode = false;
             }
         } else if (data.charCodeAt(0) === 3) {
             if (this.logger) {
@@ -116,6 +131,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
             this.inputBuffer = '';
             this.hintShown = false;
             this.lastHintLength = 0;
+            this.inlineCompletionMode = false;
         } else if (data.charCodeAt(0) >= 32) {
             const code = data.charCodeAt(0);
             if (code === 0xFEFF || code === 0x200B || code === 0x200C || 
@@ -124,8 +140,49 @@ export class TerminalManager implements vscode.Pseudoterminal {
             }
             this.inputBuffer += data;
             this.writeEmitter.fire(data);
+            this.inlineCompletionMode = false;
             
             this.checkAndShowHint();
+        }
+    }
+
+    private handleEscapeSequence(data: string): void {
+        if (data === '\x1b[A' || data === '\x1bOA') {
+            this.cycleCompletion(true);
+        } else if (data === '\x1b[B' || data === '\x1bOB') {
+            this.cycleCompletion(false);
+        }
+    }
+
+    private cycleCompletion(forward: boolean): void {
+        if (!isTabCompletionEnabled()) {
+            return;
+        }
+
+        const minChars = getMinTriggerChars();
+        if (this.inputBuffer.length < minChars) {
+            return;
+        }
+
+        if (!this.inlineCompletionMode) {
+            this.originalInput = this.inputBuffer;
+            this.inlineCompletionMode = true;
+        }
+
+        const suggestion = getTabHelper().cycleInlineCompletion(this.originalInput, forward);
+        
+        if (suggestion) {
+            const oldLen = this.inputBuffer.length;
+            this.inputBuffer = suggestion;
+            
+            for (let i = 0; i < oldLen; i++) {
+                this.writeEmitter.fire('\b \b');
+            }
+            this.writeEmitter.fire(`${ANSI_DIM}${suggestion}${ANSI_RESET}`);
+            
+            const clearLen = suggestion.length;
+            this.writeEmitter.fire(`\x1b[${clearLen}D`);
+            this.writeEmitter.fire(suggestion);
         }
     }
 
