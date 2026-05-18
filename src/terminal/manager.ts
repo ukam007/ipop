@@ -94,14 +94,12 @@ export class TerminalManager implements vscode.Pseudoterminal {
                 this.logger.logInput(this.inputBuffer);
             }
             this.client.send(this.inputBuffer);
-            this.writeEmitter.fire('\r\n');
             this.inputBuffer = '';
             this.hintShown = false;
             this.lastHintLength = 0;
         } else if (data === '\x7f' || data === '\b') {
             if (this.inputBuffer.length > 0) {
                 this.inputBuffer = this.inputBuffer.slice(0, -1);
-                this.writeEmitter.fire('\b \b');
                 
                 if (this.inputBuffer.length < this.lastHintLength) {
                     this.hintShown = false;
@@ -118,7 +116,6 @@ export class TerminalManager implements vscode.Pseudoterminal {
             this.lastHintLength = 0;
         } else if (data.charCodeAt(0) >= 32) {
             this.inputBuffer += data;
-            this.writeEmitter.fire(data);
             
             this.checkAndShowHint();
         }
