@@ -303,27 +303,18 @@ export class TerminalManager implements vscode.Pseudoterminal {
     }
 
     private updateInlineHint(newHint: string): void {
-        const clearOldHint = this.lastHintText.length > 0;
+        this.writeEmitter.fire('\x1b[K');
         
-        if (clearOldHint) {
-            this.writeEmitter.fire('\x1b[s');
-            this.writeEmitter.fire('\x1b[A\x1b[K');
-            this.writeEmitter.fire('\x1b[u');
+        this.writeEmitter.fire(` ${ANSI_DIM}${newHint}${ANSI_RESET}`);
+        
+        for (let i = 0; i < newHint.length + 1; i++) {
+            this.writeEmitter.fire('\b');
         }
-        
-        this.writeEmitter.fire('\x1b[s');
-        this.writeEmitter.fire('\r\n');
-        this.writeEmitter.fire(`${ANSI_DIM}${newHint}${ANSI_RESET}`);
-        this.writeEmitter.fire('\x1b[u');
     }
 
     private clearInlineHint(): void {
-        if (this.lastHintText.length > 0) {
-            this.writeEmitter.fire('\x1b[s');
-            this.writeEmitter.fire('\x1b[A\x1b[K');
-            this.writeEmitter.fire('\x1b[u');
-            this.lastHintText = '';
-        }
+        this.writeEmitter.fire('\x1b[K');
+        this.lastHintText = '';
     }
 
     private async handleTabCompletion(): Promise<void> {
