@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.25-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.26-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.25.vsix` 文件
+1. 下载 `ipop-telnet-1.0.26.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -175,7 +175,8 @@ session-{连接名}-{IP}-{端口}-{日期}-{时间}.log
 |--------|------|------|
 | `Ctrl+Shift+Space` | 搜索符号 | 终端焦点 |
 | `Tab` | 触发补全列表 | IPOP 终端，输入 >= 2 字符 |
-| `↑` / `↓` | 循环补全 | IPOP 终端，输入 >= 2 字符 |
+| `↑` / `↓` | 循环补全 | 输入 >= 2 字符 |
+| `↑` / `↓` | 浏览历史命令 | 输入为空或 < 2 字符 |
 | `Ctrl+C` | 中断信号 | 终端中 |
 | `Enter` | 发送命令 | 终端中 |
 
@@ -335,6 +336,33 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.26 (2026-05-18)
+
+**新增功能**
+- **上下键查找历史命令**：输入为空时按 ↑↓ 浏览历史命令
+- **智能切换**：有输入时 ↑↓ 循环补全，无输入时浏览历史
+
+**使用方式**
+| 场景 | ↑/↓ 键功能 |
+|------|-----------|
+| 输入 ≥2 字符 | 循环补全匹配项 |
+| 输入为空 | 浏览历史命令 |
+| 浏览历史中输入新字符 | 退出历史浏览模式 |
+
+**交互示例**
+```
+127.0.0.1:2323> █     ← 输入为空
+按 ↑: 127.0.0.1:2323> help     ← 显示上一条命令
+按 ↑: 127.0.0.1:2323> status   ← 继续向上浏览
+按 ↓: 127.0.0.1:2323> help     ← 向下浏览
+按 ↓: 127.0.0.1:2323> █        ← 回到空输入
+```
+
+**技术实现**
+- `navigateHistory()`: 浏览历史命令列表
+- `displayInputBuffer()`: 重绘输入行
+- 自动保存当前输入，退出历史浏览时恢复
 
 ### v1.0.25 (2026-05-18)
 

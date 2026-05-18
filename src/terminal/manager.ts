@@ -38,6 +38,9 @@ export class TerminalManager implements vscode.Pseudoterminal {
     private inlineCompletionMode: boolean = false;
     private originalInput: string = '';
     private escapeBuffer: string = '';
+    private historyIndex: number = -1;
+    private historyMatches: string[] = [];
+    private savedInputBeforeHistory: string = '';
 
     constructor(connection: TelnetConnection) {
         this.connection = connection;
@@ -115,6 +118,8 @@ export class TerminalManager implements vscode.Pseudoterminal {
             this.lastHintLength = 0;
             this.lastHintText = '';
             this.inlineCompletionMode = false;
+            this.historyIndex = -1;
+            this.historyMatches = [];
         } else if (data === '\x7f' || data === '\b') {
             if (this.inputBuffer.length > 0) {
                 this.inputBuffer = this.inputBuffer.slice(0, -1);
@@ -151,6 +156,8 @@ export class TerminalManager implements vscode.Pseudoterminal {
             }
             this.inputBuffer += data;
             this.inlineCompletionMode = false;
+            this.historyIndex = -1;
+            this.historyMatches = [];
             
             this.checkAndShowHint();
         }
@@ -158,10 +165,55 @@ export class TerminalManager implements vscode.Pseudoterminal {
 
     private handleEscapeSequence(data: string): void {
         if (data === '\x1b[A' || data === '\x1bOA') {
-            this.cycleCompletion(true);
+            if (this.inputBuffer.length >= getMinTriggerChars()) {
+                this.cycleCompletion(true);
+            } else {
+                this.navigateHistory(true);
+            }
         } else if (data === '\x1b[B' || data === '\x1bOB') {
-            this.cycleCompletion(false);
+            if (this.inputBuffer.length >= getMinTriggerChars()) {
+                this.cycleCompletion(false);
+            } else {
+                this.navigateHistory(false);
+            }
         }
+    }
+
+    private navigateHistory(backward: boolean): void {
+        try {
+            const history = getHistory();
+            
+            if (this.historyIndex === -1) {
+                this.savedInputBeforeHistory = this.inputBuffer;
+                this.historyMatches = history.getRecentCommands(50);
+                this.historyIndex = backward ? 0 : this.historyMatches.length - 1;
+            } else {
+                if (backward) {
+                    this.historyIndex = Math.min(this.historyIndex + 1, this.historyMatches.length - 1);
+                } else {
+                    this.historyIndex = Math.max(this.historyIndex - 1, -1);
+                }
+            }
+            
+            if (this.historyIndex >= 0 && this.historyIndex < this.historyMatches.length) {
+                const cmd = this.historyMatches[this.historyIndex];
+                this.displayInputBuffer(cmd);
+            } else if (this.historyIndex === -1) {
+                this.displayInputBuffer(this.savedInputBeforeHistory);
+                this.historyMatches = [];
+            }
+        } catch {}
+    }
+
+    private displayInputBuffer(newBuffer: string): void {
+        const prompt = `${this.connection.host}:${this.connection.port}> `;
+        
+        this.writeEmitter.fire('\r');
+        this.writeEmitter.fire('\x1b[K');
+        this.writeEmitter.fire(prompt);
+        this.writeEmitter.fire(newBuffer);
+        
+        this.inputBuffer = newBuffer;
     }
 
     private cycleCompletion(forward: boolean): void {
