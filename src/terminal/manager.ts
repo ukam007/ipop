@@ -33,6 +33,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
     private inputBuffer: string = '';
     private hintShown: boolean = false;
     private lastHintLength: number = 0;
+    private lastHintText: string = '';
     private logger: SessionLogger | null = null;
     private inlineCompletionMode: boolean = false;
     private originalInput: string = '';
@@ -100,6 +101,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
         }
 
         if (data === '\r') {
+            this.clearInlineHint();
             if (this.logger) {
                 this.logger.logInput(this.inputBuffer);
             }
@@ -113,6 +115,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
             this.lastHintLength = 0;
             this.inlineCompletionMode = false;
         } else if (data === '\x7f' || data === '\b') {
+            this.clearInlineHint();
             if (this.inputBuffer.length > 0) {
                 this.inputBuffer = this.inputBuffer.slice(0, -1);
                 this.writeEmitter.fire('\b \b');
@@ -121,8 +124,13 @@ export class TerminalManager implements vscode.Pseudoterminal {
                     this.hintShown = false;
                 }
                 this.inlineCompletionMode = false;
+                
+                if (this.inputBuffer.length >= getMinTriggerChars()) {
+                    this.checkAndShowHint();
+                }
             }
         } else if (data.charCodeAt(0) === 3) {
+            this.clearInlineHint();
             if (this.logger) {
                 this.logger.logInput('^C');
             }
@@ -272,28 +280,58 @@ export class TerminalManager implements vscode.Pseudoterminal {
 
         const minChars = getMinTriggerChars();
         
-        if (this.inputBuffer.length >= minChars && !this.hintShown) {
+        if (this.inputBuffer.length >= minChars) {
             const matchCount = getTabHelper().quickSearch(this.inputBuffer);
             
             if (matchCount > 0) {
-                this.showCompletionHint(this.inputBuffer, matchCount);
-                this.hintShown = true;
-                this.lastHintLength = this.inputBuffer.length;
+                const previewMatch = getTabHelper().getPreviewMatch(this.inputBuffer);
+                const newHint = this.formatHintText(matchCount, previewMatch);
+                
+                if (newHint !== this.lastHintText) {
+                    this.updateInlineHint(newHint);
+                    this.lastHintText = newHint;
+                    this.hintShown = true;
+                    this.lastHintLength = this.inputBuffer.length;
+                }
             }
         }
     }
 
-    private showCompletionHint(query: string, count: number): void {
-        const previewMatch = getTabHelper().getPreviewMatch(query);
-        const previewText = previewMatch ? ` → ${previewMatch}` : '';
-        this.writeEmitter.fire(`\r\n${ANSI_YELLOW}💡 ${count} matches${previewText}${ANSI_RESET}\r\n`);
-        this.writeEmitter.fire(`${this.connection.host}:${this.connection.port}> ${this.inputBuffer}`);
+    private formatHintText(count: number, preview: string | null): string {
+        const previewText = preview ? ` → ${preview}` : '';
+        return `💡 ${count}${previewText}`;
+    }
+
+    private updateInlineHint(newHint: string): void {
+        const clearOldHint = this.lastHintText.length > 0;
+        
+        if (clearOldHint) {
+            this.writeEmitter.fire('\x1b[s');
+            this.writeEmitter.fire('\x1b[A\x1b[K');
+            this.writeEmitter.fire('\x1b[u');
+        }
+        
+        this.writeEmitter.fire('\x1b[s');
+        this.writeEmitter.fire('\r\n');
+        this.writeEmitter.fire(`${ANSI_DIM}${newHint}${ANSI_RESET}`);
+        this.writeEmitter.fire('\x1b[u');
+    }
+
+    private clearInlineHint(): void {
+        if (this.lastHintText.length > 0) {
+            this.writeEmitter.fire('\x1b[s');
+            this.writeEmitter.fire('\x1b[A\x1b[K');
+            this.writeEmitter.fire('\x1b[u');
+            this.lastHintText = '';
+        }
     }
 
     private async handleTabCompletion(): Promise<void> {
         if (!isTabCompletionEnabled()) {
             return;
         }
+
+        this.clearInlineHint();
 
         const query = this.inputBuffer;
         const minChars = getMinTriggerChars();
