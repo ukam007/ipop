@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.14-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.15-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.14.vsix` 文件
+1. 下载 `ipop-telnet-1.0.15.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -334,6 +334,20 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.15 (2026-05-18)
+
+**修复问题**
+- 修复错误消息显示命令名大小写问题
+- 保持原始输入的大小写格式显示
+
+**技术改进**
+- handleCommand 保留原始命令名 `originalCmd` 用于显示
+- 内部匹配仍用小写 `cmd`，方便命令匹配
+
+**影响范围**
+- 修复前：输入 `funcA` 显示 `Unknown command: funca`
+- 修复后：输入 `funcA` 显示 `Unknown command: funcA`
 
 ### v1.0.14 (2026-05-18)
 

@@ -53,6 +53,7 @@ function handleCommand(data, client) {
     if (!trimmed) return null;
 
     const parts = trimmed.split(/\s+/);
+    const originalCmd = parts[0];
     const cmd = parts[0].toLowerCase();
     const args = parts.slice(1);
 
@@ -75,7 +76,7 @@ function handleCommand(data, client) {
         return response;
     }
     
-    return encodeResponse(`Unknown command: ${cmd}. Type 'help' for available commands.\r\n`);
+    return encodeResponse(`Unknown command: ${originalCmd}. Type 'help' for available commands.\r\n`);
 }
 
 const server = net.createServer((client) => {
