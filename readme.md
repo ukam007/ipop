@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.11-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.12-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.11.vsix` 文件
+1. 下载 `ipop-telnet-1.0.12.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -334,6 +334,20 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.12 (2026-05-18)
+
+**修复问题**
+- **关键修复**：修复 help/status 命令显示格式混乱
+- 模板字符串缩进导致的多余空格问题
+
+**技术改进**
+- help/status 命令改用字符串拼接，避免模板字符串缩进
+- 每行显式添加 `\r\n`
+
+**影响范围**
+- 修复前：help 输出每行前面有大量空格，显示混乱
+- 修复后：help 输出格式整齐，每行正确显示
 
 ### v1.0.11 (2026-05-18)
 

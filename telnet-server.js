@@ -4,26 +4,22 @@ const PORT = 2323;
 const HOST = '127.0.0.1';
 
 const commands = {
-    'help': () => 
-`Available commands:
-  help     - Show this help
-  echo     - Echo back message
-  status   - Show server status
-  time     - Show current time
-  repeat   - Repeat message (repeat <n> <message>)
-  clear    - Clear screen
-  quit     - Disconnect
-  login    - Simulate login (login <user> <pass>)
-  ping     - Test connection
-  chinese  - Test Chinese encoding
-`,
-    'status': () => 
-`Server Status:
-  Host: ${HOST}
-  Port: ${PORT}
-  Connections: ${server.connections || 0}
-  Uptime: ${process.uptime().toFixed(2)}s
-`,
+    'help': () => 'Available commands:\r\n' +
+        '  help     - Show this help\r\n' +
+        '  echo     - Echo back message\r\n' +
+        '  status   - Show server status\r\n' +
+        '  time     - Show current time\r\n' +
+        '  repeat   - Repeat message (repeat <n> <message>)\r\n' +
+        '  clear    - Clear screen\r\n' +
+        '  quit     - Disconnect\r\n' +
+        '  login    - Simulate login (login <user> <pass>)\r\n' +
+        '  ping     - Test connection\r\n' +
+        '  chinese  - Test Chinese encoding\r\n',
+    'status': () => 'Server Status:\r\n' +
+        `  Host: ${HOST}\r\n` +
+        `  Port: ${PORT}\r\n` +
+        `  Connections: ${server.connections || 0}\r\n` +
+        `  Uptime: ${process.uptime().toFixed(2)}s\r\n`,
     'time': () => `Current time: ${new Date().toISOString()}\r\n`,
     'ping': () => 'PONG!\r\n',
     'chinese': () => '中文测试: 你好世界 Hello World 中文支持\r\n',
