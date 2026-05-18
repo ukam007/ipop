@@ -303,13 +303,11 @@ export class TerminalManager implements vscode.Pseudoterminal {
     }
 
     private updateInlineHint(newHint: string): void {
+        this.writeEmitter.fire('\x1b[s');
         this.writeEmitter.fire('\x1b[K');
         const hintText = `  ${newHint}`;
         this.writeEmitter.fire(`${ANSI_DIM}${hintText}${ANSI_RESET}`);
-        
-        for (let i = 0; i < hintText.length; i++) {
-            this.writeEmitter.fire('\b');
-        }
+        this.writeEmitter.fire('\x1b[u');
     }
 
     private clearInlineHint(): void {

@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.22-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.23-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.22.vsix` 文件
+1. 下载 `ipop-telnet-1.0.23.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -335,6 +335,22 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.23 (2026-05-18)
+
+**修复问题**
+- **关键修复**：修复提示粘连输入问题
+- 使用 `\x1b[s/u` 保存恢复光标，提示显示在行末但光标保持输入末尾
+
+**技术改进**
+- `\x1b[s` 保存光标 → `\x1b[K` 清除行末 → 显示提示 → `\x1b[u` 恢复光标
+- 提示固定在行末，不跟随光标移动
+
+**显示效果**
+```
+127.0.0.1:2323> abc█  💡 5 → funcA
+               ↑光标  ↑提示在行末（不影响输入）
+```
 
 ### v1.0.22 (2026-05-18)
 
