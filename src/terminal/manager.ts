@@ -116,8 +116,12 @@ export class TerminalManager implements vscode.Pseudoterminal {
             this.hintShown = false;
             this.lastHintLength = 0;
         } else if (data.charCodeAt(0) >= 32) {
+            const code = data.charCodeAt(0);
+            if (code === 0xFEFF || code === 0x200B || code === 0x200C || 
+                code === 0x200D || code === 0x2060 || code === 0x00AD) {
+                return;
+            }
             this.inputBuffer += data;
-            this.writeEmitter.fire(data);
             
             this.checkAndShowHint();
         }

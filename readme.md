@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.9-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.0.vsix` 文件
+1. 下载 `ipop-telnet-1.0.9.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -334,6 +334,22 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.9 (2026-05-18)
+
+**修复问题**
+- **关键修复**：解决终端显示混乱问题（重复提示符、乱码字符）
+- 修复本地回显与服务器回显冲突导致的字符重复显示
+- 过滤不可见 Unicode 字符（BOM、零宽空格、软连字符等）
+
+**技术改进**
+- 移除 handleInput 中的本地字符回显（由服务器负责回显）
+- 添加不可见字符过滤：0xFEFF(BOM)、0x200B/C/D(零宽)、0x2060/0x00AD
+- 避免双回显导致的终端输出混乱
+
+**影响范围**
+- 修复前：终端显示重复提示符、命令重复、乱码字符
+- 修复后：终端显示清晰，服务器回显正常
 
 ### v1.0.8 (2026-05-15)
 
