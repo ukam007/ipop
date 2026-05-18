@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.12-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.13-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.12.vsix` 文件
+1. 下载 `ipop-telnet-1.0.13.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -334,6 +334,26 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.13 (2026-05-18)
+
+**修复问题**
+- **关键修复**：修复服务器编码问题，使用 iconv-lite 正确编码/解码
+- 服务器统一使用 UTF-8 编码，响应和接收都正确处理
+
+**技术改进**
+- 服务器添加 `encodeResponse()` 函数，所有响应使用 iconv.encode
+- 服务器接收数据使用 Buffer 处理，iconv.decode 解码
+- 启动时显示编码提示：`Encoding: utf-8`
+
+**重要提示**
+- 测试服务器默认 UTF-8 编码
+- IPOP 连接时请选择 UTF-8 编码
+- 如果选择 GBK 等其他编码，会产生乱码
+
+**影响范围**
+- 修复前：中文显示乱码，命令解析错误
+- 修复后：正确编码处理，UTF-8 下显示正常
 
 ### v1.0.12 (2026-05-18)
 
