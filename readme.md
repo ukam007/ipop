@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.13-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.14-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.13.vsix` 文件
+1. 下载 `ipop-telnet-1.0.14.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -334,6 +334,20 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.14 (2026-05-18)
+
+**修复问题**
+- **关键修复**：修复服务器 Buffer.concat 方法调用错误
+- Buffer 没有 `.concat()` 方法，需使用静态方法 `Buffer.concat([])`
+
+**技术改进**
+- 修复 IAC 协议处理和 Backspace 处理中的 Buffer 操作
+- `buffer.slice().concat()` 改为 `Buffer.concat([buffer.slice(), buffer.slice()])`
+
+**影响范围**
+- 修复前：执行命令时报错 `buffer.slice(...).concat is not a function`
+- 修复后：服务器正常运行，无报错
 
 ### v1.0.13 (2026-05-18)
 

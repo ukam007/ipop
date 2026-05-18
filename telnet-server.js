@@ -123,7 +123,7 @@ const server = net.createServer((client) => {
                 i = -1;
             } else if (byte === 8 || byte === 127) { // Backspace
                 if (buffer.length > 1) {
-                    buffer = buffer.slice(0, i - 1 < 0 ? 0 : i).concat(buffer.slice(i + 1));
+                    buffer = Buffer.concat([buffer.slice(0, i - 1 < 0 ? 0 : i), buffer.slice(i + 1)]);
                     i = Math.max(-1, i - 2);
                 } else {
                     buffer = Buffer.alloc(0);
@@ -135,10 +135,10 @@ const server = net.createServer((client) => {
                     if (iacCmd === 253 || iacCmd === 251) { // DO/WILL
                         const option = buffer[i + 2];
                         client.write(Buffer.from([255, 254, option])); // WONT
-                        buffer = buffer.slice(0, i).concat(buffer.slice(i + 3));
+                        buffer = Buffer.concat([buffer.slice(0, i), buffer.slice(i + 3)]);
                         i = Math.max(-1, i - 1);
                     } else {
-                        buffer = buffer.slice(0, i).concat(buffer.slice(i + 2));
+                        buffer = Buffer.concat([buffer.slice(0, i), buffer.slice(i + 2)]);
                         i = Math.max(-1, i - 1);
                     }
                 }
