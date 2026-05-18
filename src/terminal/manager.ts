@@ -122,6 +122,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
                 return;
             }
             this.inputBuffer += data;
+            this.writeEmitter.fire(data);
             
             this.checkAndShowHint();
         }

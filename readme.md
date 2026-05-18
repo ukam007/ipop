@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.9-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.10-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.9.vsix` 文件
+1. 下载 `ipop-telnet-1.0.10.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -334,6 +334,21 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.10 (2026-05-18)
+
+**修复问题**
+- **关键修复**：恢复本地回显，确保输入实时显示
+- 修改测试服务器：不回显单个字符，避免双重显示
+
+**技术改进**
+- 恢复 handleInput 本地字符回显（Line 125: writeEmitter.fire(data)）
+- 服务器移除字符回显，仅返回命令结果
+- 保持不可见字符过滤（BOM、零宽空格等）
+
+**影响范围**
+- 修复前：输入字符不实时显示，回车后才出现
+- 修复后：输入实时显示，回车后显示命令结果（无重复）
 
 ### v1.0.9 (2026-05-18)
 

@@ -124,7 +124,7 @@ const server = net.createServer((client) => {
                 }
             } else if (code >= 32) {
                 buffer += char;
-                client.write(char);
+                // Don't echo - let client handle local echo
             } else if (code === 255) { // IAC - Telnet protocol
                 // Handle IAC sequences
                 i++;
