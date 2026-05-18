@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { SymbolInfo, SYMBOL_KIND_TO_VSCODE } from '../types';
+import { SymbolInfo, FuzzyMatchResult, SYMBOL_KIND_TO_VSCODE } from '../types';
 import { getSymbolIndexer } from './indexer';
 import { 
     isIPOPTerminal, 
@@ -41,7 +41,7 @@ export class IPOPCompletionProvider {
             return undefined;
         }
         
-        const results = indexer.search(inputText);
+        const results = indexer.searchFuzzy(inputText);
         
         if (results.length === 0) {
             return undefined;
@@ -51,7 +51,7 @@ export class IPOPCompletionProvider {
         const maxResults = config.get<number>('maxResults', 20);
         const limitedResults = results.slice(0, maxResults);
         
-        return limitedResults.map(symbol => this.createCompletionItem(symbol));
+        return limitedResults.map(r => this.createCompletionItem(r.item));
     }
     
     private createCompletionItem(symbol: SymbolInfo): vscode.CompletionItem {
@@ -77,8 +77,24 @@ export class TabCompletionHelper {
             return 0;
         }
         
-        const results = indexer.search(query);
+        const results = indexer.searchFuzzy(query);
         return results.length;
+    }
+    
+    getPreviewMatch(query: string): string | null {
+        const indexer = getSymbolIndexer();
+        const stats = indexer.getStats();
+        
+        if (stats.totalSymbols === 0) {
+            return null;
+        }
+        
+        const results = indexer.searchFuzzy(query, 1);
+        if (results.length > 0) {
+            return results[0].item.name;
+        }
+        
+        return null;
     }
     
     async showCompletionPicker(query: string): Promise<string | undefined> {
@@ -92,22 +108,32 @@ export class TabCompletionHelper {
         
         this.lastQuery = query;
         
-        const results = indexer.search(query);
+        const results = indexer.searchFuzzy(query);
         
         if (results.length === 0) {
             vscode.window.showInformationMessage(`No symbols matching "${query}"`);
             return undefined;
         }
         
-        const items = results.map(s => ({
-            label: s.name,
-            description: s.detail || '',
-            detail: s.filePath ? `${s.filePath}:${s.line || 0}` : `Source: ${s.sourceId}`,
-            symbol: s
+        const kindIcons: Record<string, string> = {
+            'function': 'ƒ',
+            'class': 'c',
+            'method': 'm',
+            'variable': 'v',
+            'macro': '#',
+            'typedef': 't',
+            'command': '>'
+        };
+        
+        const items = results.map(r => ({
+            label: `${kindIcons[r.item.kind] || '?'} ${r.item.name}`,
+            description: r.item.detail || '',
+            detail: r.item.filePath ? `${r.item.filePath}:${r.item.line || 0}` : `Source: ${r.item.sourceId}`,
+            symbol: r.item
         }));
         
         const selected = await vscode.window.showQuickPick(items, {
-            placeHolder: `Tab Completion: ${results.length} matches for "${query}"`,
+            placeHolder: `${results.length} matches for "${query}" - Press Enter to select`,
             matchOnDescription: true,
             matchOnDetail: true
         });

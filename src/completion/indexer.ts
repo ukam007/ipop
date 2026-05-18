@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { CompletionSource, SymbolInfo } from '../types';
+import { CompletionSource, SymbolInfo, FuzzyMatchResult } from '../types';
 import { getSymbolStore, createSymbolsFromCustom } from './symbols';
 import { FuzzySearcher } from './fuzzy';
 import { parseDirectory } from './parser';
@@ -102,6 +102,13 @@ export class SymbolIndexer {
         
         const results = this.fuzzySearcher.search(query, max);
         return results.map(r => r.item);
+    }
+    
+    searchFuzzy(query: string, maxResults?: number): FuzzyMatchResult[] {
+        const config = vscode.workspace.getConfiguration('ipop.completion');
+        const max = maxResults || config.get<number>('maxResults', 20);
+        
+        return this.fuzzySearcher.search(query, max);
     }
 
     private updateFuzzyIndex(): void {

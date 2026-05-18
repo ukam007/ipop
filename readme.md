@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.15-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.16-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.15.vsix` 文件
+1. 下载 `ipop-telnet-1.0.16.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -334,6 +334,24 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.16 (2026-05-18)
+
+**改进补全功能**
+- 补全提示显示预览：`💡 5 matches → funcA`（显示第一个匹配）
+- QuickPick 列表添加符号类型图标：`ƒ`函数、`c`类、`m`方法、`v`变量、`#`宏、`t`类型
+- 简化提示信息格式，减少冗余文本
+- 改进搜索体验，更清晰的选择提示
+
+**技术改进**
+- 新增 `getPreviewMatch()` 方法获取首个匹配预览
+- 新增 `searchFuzzy()` 方法返回完整匹配结果
+- QuickPick 显示格式优化：`ƒ funcA - 函数描述 - 文件路径`
+
+**体验改进**
+- 输入时即可看到最佳匹配预览
+- 一眼识别符号类型
+- 更简洁的交互流程
 
 ### v1.0.15 (2026-05-18)
 

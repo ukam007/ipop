@@ -227,8 +227,9 @@ export class TerminalManager implements vscode.Pseudoterminal {
     }
 
     private showCompletionHint(query: string, count: number): void {
-        this.writeEmitter.fire('\r\n');
-        this.writeEmitter.fire(`${ANSI_YELLOW}💡 ${count} matches for "${query}" - Press TAB to complete${ANSI_RESET}\r\n`);
+        const previewMatch = getTabHelper().getPreviewMatch(query);
+        const previewText = previewMatch ? ` → ${previewMatch}` : '';
+        this.writeEmitter.fire(`\r\n${ANSI_YELLOW}💡 ${count} matches${previewText}${ANSI_RESET}\r\n`);
         this.writeEmitter.fire(`${this.connection.host}:${this.connection.port}> ${this.inputBuffer}`);
     }
 
