@@ -100,6 +100,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
         } else if (data === '\x7f' || data === '\b') {
             if (this.inputBuffer.length > 0) {
                 this.inputBuffer = this.inputBuffer.slice(0, -1);
+                this.writeEmitter.fire('\b \b');
                 
                 if (this.inputBuffer.length < this.lastHintLength) {
                     this.hintShown = false;
@@ -116,6 +117,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
             this.lastHintLength = 0;
         } else if (data.charCodeAt(0) >= 32) {
             this.inputBuffer += data;
+            this.writeEmitter.fire(data);
             
             this.checkAndShowHint();
         }
