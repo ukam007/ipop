@@ -102,35 +102,37 @@ export class TerminalManager implements vscode.Pseudoterminal {
 
         if (data === '\r') {
             this.clearInlineHint();
+            this.writeEmitter.fire('\r\n');
             if (this.logger) {
                 this.logger.logInput(this.inputBuffer);
             }
             try {
                 getHistory().recordCommand(this.inputBuffer, 'user');
             } catch {}
-            this.writeEmitter.fire('\r\n');
             this.client.send(this.inputBuffer);
             this.inputBuffer = '';
             this.hintShown = false;
             this.lastHintLength = 0;
+            this.lastHintText = '';
             this.inlineCompletionMode = false;
         } else if (data === '\x7f' || data === '\b') {
-            this.clearInlineHint();
             if (this.inputBuffer.length > 0) {
                 this.inputBuffer = this.inputBuffer.slice(0, -1);
-                this.writeEmitter.fire('\b \b');
+                this.inlineCompletionMode = false;
                 
                 if (this.inputBuffer.length < this.lastHintLength) {
                     this.hintShown = false;
                 }
-                this.inlineCompletionMode = false;
                 
                 if (this.inputBuffer.length >= getMinTriggerChars()) {
                     this.checkAndShowHint();
+                } else {
+                    this.clearInlineHint();
                 }
             }
         } else if (data.charCodeAt(0) === 3) {
             this.clearInlineHint();
+            this.writeEmitter.fire('\r\n');
             if (this.logger) {
                 this.logger.logInput('^C');
             }
@@ -139,6 +141,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
             this.inputBuffer = '';
             this.hintShown = false;
             this.lastHintLength = 0;
+            this.lastHintText = '';
             this.inlineCompletionMode = false;
         } else if (data.charCodeAt(0) >= 32) {
             const code = data.charCodeAt(0);
@@ -147,7 +150,6 @@ export class TerminalManager implements vscode.Pseudoterminal {
                 return;
             }
             this.inputBuffer += data;
-            this.writeEmitter.fire(data);
             this.inlineCompletionMode = false;
             
             this.checkAndShowHint();
@@ -287,13 +289,15 @@ export class TerminalManager implements vscode.Pseudoterminal {
                 const previewMatch = getTabHelper().getPreviewMatch(this.inputBuffer);
                 const newHint = this.formatHintText(matchCount, previewMatch);
                 
-                if (newHint !== this.lastHintText) {
-                    this.updateInlineHint(newHint);
-                    this.lastHintText = newHint;
-                    this.hintShown = true;
-                    this.lastHintLength = this.inputBuffer.length;
-                }
+                this.updateInlineHint(newHint);
+                this.lastHintText = newHint;
+                this.hintShown = true;
+                this.lastHintLength = this.inputBuffer.length;
+            } else {
+                this.clearInlineHint();
             }
+        } else {
+            this.clearInlineHint();
         }
     }
 
@@ -303,15 +307,29 @@ export class TerminalManager implements vscode.Pseudoterminal {
     }
 
     private updateInlineHint(newHint: string): void {
-        this.writeEmitter.fire('\x1b[s');
-        this.writeEmitter.fire('\x1b[K');
+        const prompt = `${this.connection.host}:${this.connection.port}> `;
+        const inputLen = this.inputBuffer.length;
         const hintText = `  ${newHint}`;
+        
+        this.writeEmitter.fire('\r');
+        this.writeEmitter.fire('\x1b[K');
+        this.writeEmitter.fire(prompt);
+        this.writeEmitter.fire(this.inputBuffer);
         this.writeEmitter.fire(`${ANSI_DIM}${hintText}${ANSI_RESET}`);
-        this.writeEmitter.fire('\x1b[u');
+        
+        for (let i = 0; i < hintText.length; i++) {
+            this.writeEmitter.fire('\b');
+        }
     }
 
     private clearInlineHint(): void {
+        const prompt = `${this.connection.host}:${this.connection.port}> `;
+        
+        this.writeEmitter.fire('\r');
         this.writeEmitter.fire('\x1b[K');
+        this.writeEmitter.fire(prompt);
+        this.writeEmitter.fire(this.inputBuffer);
+        
         this.lastHintText = '';
     }
 
