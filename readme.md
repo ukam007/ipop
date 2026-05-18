@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.24-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.25-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.24.vsix` 文件
+1. 下载 `ipop-telnet-1.0.25.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -335,6 +335,20 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.25 (2026-05-18)
+
+**修复问题**
+- **关键修复**：修复日志侧边栏显示 "No logs" 问题
+- 空配置路径时正确使用默认日志目录
+
+**技术改进**
+- `LogFileManager` 构造函数：`configPath || this.getDefaultLogDir()`
+- 与 `TerminalManager` 保持一致的空值处理逻辑
+
+**影响范围**
+- 修复前：配置 `ipop.logging.path` 为空时，日志目录路径为空字符串
+- 修复后：正确使用默认目录 `%APPDATA%\ipop\logs`
 
 ### v1.0.24 (2026-05-18)
 

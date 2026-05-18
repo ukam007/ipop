@@ -18,7 +18,8 @@ export class LogFileManager {
 
     constructor() {
         const config = vscode.workspace.getConfiguration('ipop.logging');
-        this.logDir = config.get<string>('path', this.getDefaultLogDir());
+        const configPath = config.get<string>('path', '');
+        this.logDir = configPath || this.getDefaultLogDir();
         this.maxFiles = config.get<number>('maxFiles', 50);
         this.maxAge = config.get<number>('maxAge', 7);
         this.maxSize = config.get<number>('maxSize', 10);
