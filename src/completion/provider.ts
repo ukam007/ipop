@@ -2,10 +2,7 @@ import * as vscode from 'vscode';
 import { SymbolInfo, FuzzyMatchResult, SYMBOL_KIND_TO_VSCODE } from '../types';
 import { getSymbolIndexer } from './indexer';
 import { getHistory } from './history';
-import { 
-    isIPOPTerminal, 
-    getActiveIPOPTerminal, 
-    shouldTriggerCompletion,
+import {
     getMinTriggerChars,
     isAutoCompletionEnabled,
     isTabCompletionEnabled
@@ -27,10 +24,6 @@ export class IPOPCompletionProvider {
         token: vscode.CancellationToken
     ): Promise<vscode.CompletionItem[] | undefined> {
         if (!isAutoCompletionEnabled()) {
-            return undefined;
-        }
-        
-        if (!shouldTriggerCompletion(context.terminal)) {
             return undefined;
         }
         
@@ -268,15 +261,6 @@ export async function triggerCompletion(): Promise<void> {
         return;
     }
     
-    const activeTerminal = getActiveIPOPTerminal();
-    
-    if (!activeTerminal) {
-        vscode.window.showWarningMessage('No active IPOP terminal');
-        return;
-    }
-    
-    activeTerminal.show();
-    
     const query = await vscode.window.showInputBox({
         prompt: 'Search symbols for completion',
         placeHolder: 'Enter partial symbol name (e.g., "get", "init")',
@@ -287,8 +271,8 @@ export async function triggerCompletion(): Promise<void> {
     
     const insertText = await getTabHelper().showCompletionPicker(query);
     
-    if (insertText && activeTerminal) {
-        activeTerminal.sendText(insertText);
+    if (insertText) {
+        vscode.window.showInformationMessage(`Completion: ${insertText}`);
     }
 }
 

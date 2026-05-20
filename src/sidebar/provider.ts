@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { TelnetConnection, ShortcutCommand, CompletionSource } from '../types';
 import { ConnectionTreeItem, ShortcutTreeItem, CompletionSourceTreeItem, InfoTreeItem } from './item';
 import { getConfigStore } from '../config/store';
-import { getTerminalRegistry } from '../terminal/manager';
+import { WebViewPanelRegistry } from '../webview/panel';
 
 export class ConnectionsProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     private _onDidChangeTreeData = new vscode.EventEmitter<vscode.TreeItem | undefined | null | void>();
@@ -25,10 +25,10 @@ export class ConnectionsProvider implements vscode.TreeDataProvider<vscode.TreeI
             ]);
         }
 
-        const registry = getTerminalRegistry();
+        const registry = WebViewPanelRegistry.getInstance();
         const items = connections.map(conn => {
-            const manager = registry.get(conn.id);
-            const status = manager?.getStatus() || 'disconnected';
+            const panel = registry.get(conn.id);
+            const status = panel ? 'connected' : 'disconnected';
             return new ConnectionTreeItem(conn, status);
         });
 

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { TelnetConnection, CompletionSource, Encoding, CompletionSourceType } from '../types';
 import { getConfigStore } from '../config/store';
 import { getConnectionsProvider, getCompletionSourcesProvider } from '../sidebar/provider';
-import { getTerminalRegistry } from '../terminal/manager';
+import { WebViewPanelRegistry } from '../webview/panel';
 import { getSymbolIndexer } from '../completion/indexer';
 import { ConnectionTreeItem, CompletionSourceTreeItem, ShortcutTreeItem } from '../sidebar/item';
 import { addShortcut, deleteShortcut, sendShortcut } from './shortcuts';
@@ -61,19 +61,17 @@ export async function newConnection(): Promise<void> {
 
 export async function connect(item: ConnectionTreeItem): Promise<void> {
     const connection = item.connection;
-    const terminal = getTerminalRegistry().create(connection);
-    terminal.show();
+    const panel = WebViewPanelRegistry.getInstance().create(connection);
+    panel.show();
     getConnectionsProvider().refresh();
 }
 
 export async function disconnect(item: ConnectionTreeItem): Promise<void> {
     const connection = item.connection;
-    const manager = getTerminalRegistry().get(connection.id);
+    const panel = WebViewPanelRegistry.getInstance().get(connection.id);
     
-    if (manager) {
-        manager.disconnect();
-        manager.getTerminal()?.dispose();
-        getTerminalRegistry().delete(connection.id);
+    if (panel) {
+        panel.dispose();
     }
     
     getConnectionsProvider().refresh();

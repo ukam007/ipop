@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.44-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.44.vsix` 文件
+1. 下载 `ipop-telnet-2.0.0.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -336,6 +336,60 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v2.0.0 (2026-05-20) - 重大更新
+
+**核心改动**
+- **完全重写交互界面**：从 VSCode Pseudoterminal 迁移到 WebView
+- **分离显示区域**：用户输入和服务器响应完全分离，避免显示混乱
+
+**新增功能**
+- **多行输入区域**：支持多行命令输入
+- **F8 快捷键发送**：发送光标所在行或选中多行
+- **命令历史浏览**：上/下箭头浏览历史命令
+- **Tab 键补全**：自动补全功能
+- **搜索输出**：搜索历史输出内容
+- **复制功能**：支持选中多行复制
+- **自动滚动**：自动滚动到底部，支持锁定
+- **连接状态显示**：显示连接状态和自动重连按钮
+- **清空输出**：一键清空输出内容
+
+**显示效果**
+```
+┌─────────────────────────────────────┐
+│ Terminal Output（服务器响应）        │
+│ pwd                                 │
+│ /root/                              │
+│ attach_to_123$                      │
+└─────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│ Input Area（用户输入）               │
+│ ls                                  │
+│ pwd                                 │
+│ whoami                              │
+│                                     │
+│ F8: Send | ↑↓: History | Tab: Comp │
+└─────────────────────────────────────┘
+```
+
+**技术实现**
+- WebView Panel 管理类：创建、销毁、生命周期
+- HTML/CSS/JavaScript：完全自定义的界面
+- 消息传递：WebView ↔ Extension 双向通信
+- Telnet 连接管理：复用现有 TelnetClient
+- 补全和历史：复用现有 completion/history 模块
+
+**配置项新增**
+- `ipop.webview.sendShortcut`: 快捷键配置（默认 F8）
+- `ipop.webview.maxHistorySize`: 最大历史记录数
+- `ipop.webview.autoScroll`: 自动滚动开关
+- `ipop.webview.inputMaxHeight`: 输入区域最大高度
+- `ipop.webview.maxOutputLines`: 最大输出行数
+
+**文件改动**
+- 新增：`src/webview/panel.ts`, `content.ts`, `types.ts`
+- 删除：`src/terminal/manager.ts`（完全替换）
+- 修改：`src/commands/index.ts`, `src/sidebar/provider.ts`
 
 ### v1.0.44 (2026-05-20)
 

@@ -2,7 +2,7 @@
   "name": "ipop-telnet",
   "displayName": "IPOP Telnet Terminal",
   "description": "Telnet terminal with smart code completion for VSCode",
-  "version": "1.0.44",
+  "version": "2.0.0",
   "publisher": "ipop",
   "engines": {
     "vscode": "^1.85.0"
@@ -346,6 +346,31 @@
           "type": "boolean",
           "default": true,
           "description": "Include ANSI codes in log (true = raw data)"
+        },
+        "ipop.webview.sendShortcut": {
+          "type": "string",
+          "default": "F8",
+          "description": "Keyboard shortcut to send command (F8, Ctrl+Enter, etc.)"
+        },
+        "ipop.webview.maxHistorySize": {
+          "type": "number",
+          "default": 100,
+          "description": "Maximum command history size"
+        },
+        "ipop.webview.autoScroll": {
+          "type": "boolean",
+          "default": true,
+          "description": "Auto-scroll to bottom when new output arrives"
+        },
+        "ipop.webview.inputMaxHeight": {
+          "type": "number",
+          "default": 400,
+          "description": "Maximum height of input area (pixels)"
+        },
+        "ipop.webview.maxOutputLines": {
+          "type": "number",
+          "default": 1000,
+          "description": "Maximum output lines to display (for performance)"
         }
       }
     },
