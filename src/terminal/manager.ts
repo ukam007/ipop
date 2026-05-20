@@ -41,6 +41,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
     private historyIndex: number = -1;
     private historyMatches: string[] = [];
     private savedInputBeforeHistory: string = '';
+    private lastSentCommand: string = '';
 
     constructor(connection: TelnetConnection) {
         this.connection = connection;
@@ -104,9 +105,10 @@ export class TerminalManager implements vscode.Pseudoterminal {
         }
 
         if (data === '\r') {
-            // 回到行首，清除当前行（用户输入内容），避免与服务器回显重叠
-            this.writeEmitter.fire('\r');
-            this.writeEmitter.fire('\x1b[K');
+            // 记录发送的命令，用于后续清除冗余回显
+            this.lastSentCommand = this.inputBuffer;
+            
+            // 只换行，不清除用户输入
             this.writeEmitter.fire('\r\n');
             
             if (this.logger) {
@@ -301,7 +303,18 @@ export class TerminalManager implements vscode.Pseudoterminal {
                     if (this.logger) {
                         this.logger.logOutput(data);
                     }
-                    this.writeEmitter.fire(data);
+                    
+                    // 检查服务器回显是否包含用户输入，如果包含则清除冗余部分
+                    if (this.lastSentCommand && data.includes(this.lastSentCommand)) {
+                        // 转义特殊字符用于正则表达式
+                        const escaped = this.lastSentCommand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(escaped, 'g');
+                        const cleanData = data.replace(regex, '');
+                        this.writeEmitter.fire(cleanData);
+                        this.lastSentCommand = '';
+                    } else {
+                        this.writeEmitter.fire(data);
+                    }
                 },
                 onError: (error: Error) => {
                     if (this.logger) {
