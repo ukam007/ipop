@@ -108,9 +108,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
             // 记录发送的命令，用于后续清除冗余回显
             this.lastSentCommand = this.inputBuffer;
             
-            // 只换行，不清除用户输入
-            this.writeEmitter.fire('\r\n');
-            
+            // 不输出 \r\n，让服务器响应自然换行
             if (this.logger) {
                 this.logger.logInput(this.inputBuffer);
             }
@@ -306,10 +304,10 @@ export class TerminalManager implements vscode.Pseudoterminal {
                     
                     // 检查服务器回显是否包含用户输入，如果包含则清除冗余部分
                     if (this.lastSentCommand && data.includes(this.lastSentCommand)) {
-                        // 转义特殊字符用于正则表达式，同时匹配后面的 \r\n
+                        // 转义特殊字符用于正则表达式，匹配命令后的所有连续换行符，保留一个用于换行
                         const escaped = this.lastSentCommand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                        const regex = new RegExp(escaped + '(\\r\\n)?', 'g');
-                        const cleanData = data.replace(regex, '');
+                        const regex = new RegExp(escaped + '(\\r\\n)+', 'g');
+                        const cleanData = data.replace(regex, '\r\n');
                         this.writeEmitter.fire(cleanData);
                         this.lastSentCommand = '';
                     } else {
