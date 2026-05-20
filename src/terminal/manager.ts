@@ -306,9 +306,9 @@ export class TerminalManager implements vscode.Pseudoterminal {
                     
                     // 检查服务器回显是否包含用户输入，如果包含则清除冗余部分
                     if (this.lastSentCommand && data.includes(this.lastSentCommand)) {
-                        // 转义特殊字符用于正则表达式
+                        // 转义特殊字符用于正则表达式，同时匹配后面的 \r\n
                         const escaped = this.lastSentCommand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                        const regex = new RegExp(escaped, 'g');
+                        const regex = new RegExp(escaped + '(\\r\\n)?', 'g');
                         const cleanData = data.replace(regex, '');
                         this.writeEmitter.fire(cleanData);
                         this.lastSentCommand = '';

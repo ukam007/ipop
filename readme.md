@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.29-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.30-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.29.vsix` 文件
+1. 下载 `ipop-telnet-1.0.30.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -336,6 +336,31 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.30 (2026-05-18)
+
+**关键修复**
+- **修复回车后多余空行问题**：正则表达式同时匹配命令后的 `\r\n`
+
+**技术改进**
+- 正则表达式从 `pwd` 改为 `pwd(\r\n)?`
+- 清除冗余回显时同时移除换行符
+
+**显示效果**
+```
+修复前：
+  attach_to_123$ pwd  ← 用户输入
+                       ← writeEmitter.fire('\r\n')
+                       ← 服务器回显 pwd\r\n 清除 pwd，留下 \r\n（多余空行）
+                       ← 服务器回显 pwd\r\n 清除 pwd，留下 \r\n（多余空行）
+  /root/
+
+修复后：
+  attach_to_123$ pwd  ← 用户输入
+                       ← writeEmitter.fire('\r\n')
+                       ← 服务器回显 pwd\r\n 被完整清除
+  /root/               ← 命令结果
+```
 
 ### v1.0.29 (2026-05-18)
 
