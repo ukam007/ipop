@@ -233,27 +233,17 @@ if (data === '\r') {
             this.logger.logOutput(this.pendingOutput);
         }
         
-        const cmdEcho = this.lastSentCommand + '\r\n';
+        // 删除用户输入的信息（整行）
+        this.writeEmitter.fire('\r');
+        this.writeEmitter.fire('\x1b[2K');
         
-        if (this.pendingOutput.startsWith(cmdEcho)) {
-            this.writeEmitter.fire('\r');
-            this.writeEmitter.fire('\x1b[2K');
-            
-            let output = this.pendingOutput.slice(cmdEcho.length);
-            this.lastSentCommand = '';
-            this.pendingOutput = '';
-            
-            if (output) {
-                this.writeEmitter.fire(output);
-            }
-        } else {
-            let output = this.pendingOutput;
-            this.lastSentCommand = '';
-            this.pendingOutput = '';
-            
-            if (output) {
-                this.writeEmitter.fire(output);
-            }
+        // 显示服务器响应（仅保留服务器回显）
+        let output = this.pendingOutput;
+        this.lastSentCommand = '';
+        this.pendingOutput = '';
+        
+        if (output) {
+            this.writeEmitter.fire(output);
         }
     }
 
