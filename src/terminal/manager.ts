@@ -103,8 +103,9 @@ export class TerminalManager implements vscode.Pseudoterminal {
             return;
         }
 
-        if (data === '\r') {
-            const inputLen = this.inputBuffer.length;
+if (data === '\r') {
+            this.writeEmitter.fire('\r');
+            this.writeEmitter.fire('\x1b[2K');
             
             if (this.logger) {
                 this.logger.logInput(this.inputBuffer);
@@ -113,12 +114,6 @@ export class TerminalManager implements vscode.Pseudoterminal {
                 getHistory().recordCommand(this.inputBuffer, 'user');
             } catch {}
             this.client.send(this.inputBuffer);
-            
-            // 删除原始命令
-            for (let i = 0; i < inputLen; i++) {
-                this.writeEmitter.fire('\b \b');
-            }
-            this.writeEmitter.fire('\r\n');
             
             this.inputBuffer = '';
             this.hintShown = false;
