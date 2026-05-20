@@ -2,7 +2,7 @@
   "name": "ipop-telnet",
   "displayName": "IPOP Telnet Terminal",
   "description": "Telnet terminal with smart code completion for VSCode",
-  "version": "1.0.31",
+  "version": "1.0.32",
   "publisher": "ipop",
   "engines": {
     "vscode": "^1.85.0"
