@@ -197,7 +197,7 @@ this.socket.on('close', (hadError: boolean) => {
             throw new Error('Not connected');
         }
 
-        const encoded = iconv.encode(data, this.encoding);
+        const encoded = iconv.encode(data + '\r\n', this.encoding);
         this.socket.write(encoded);
     }
 
