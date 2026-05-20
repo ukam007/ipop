@@ -42,6 +42,8 @@ export class TerminalManager implements vscode.Pseudoterminal {
     private historyMatches: string[] = [];
     private savedInputBeforeHistory: string = '';
     private lastSentCommand: string = '';
+    private pendingOutput: string = '';
+    private responseTimer: NodeJS.Timeout | null = null;
 
     constructor(connection: TelnetConnection) {
         this.connection = connection;
@@ -105,9 +107,6 @@ export class TerminalManager implements vscode.Pseudoterminal {
         }
 
 if (data === '\r') {
-            this.writeEmitter.fire('\r');
-            this.writeEmitter.fire('\x1b[2K');
-            
             if (this.logger) {
                 this.logger.logInput(this.inputBuffer);
             }
@@ -220,6 +219,44 @@ if (data === '\r') {
         this.inputBuffer = newBuffer;
     }
 
+    private flushResponse(): void {
+        if (this.responseTimer) {
+            clearTimeout(this.responseTimer);
+            this.responseTimer = null;
+        }
+        
+        if (!this.lastSentCommand) {
+            return;
+        }
+        
+        if (this.logger) {
+            this.logger.logOutput(this.pendingOutput);
+        }
+        
+        const cmdEcho = this.lastSentCommand + '\r\n';
+        
+        if (this.pendingOutput.startsWith(cmdEcho)) {
+            this.writeEmitter.fire('\r');
+            this.writeEmitter.fire('\x1b[2K');
+            
+            let output = this.pendingOutput.slice(cmdEcho.length);
+            this.lastSentCommand = '';
+            this.pendingOutput = '';
+            
+            if (output) {
+                this.writeEmitter.fire(output);
+            }
+        } else {
+            let output = this.pendingOutput;
+            this.lastSentCommand = '';
+            this.pendingOutput = '';
+            
+            if (output) {
+                this.writeEmitter.fire(output);
+            }
+        }
+    }
+
     private cycleCompletion(forward: boolean): void {
         if (!isTabCompletionEnabled()) {
             return;
@@ -299,21 +336,21 @@ if (data === '\r') {
                     this.client = undefined;
                 },
                 onData: (data: string) => {
-                    if (this.logger) {
-                        this.logger.logOutput(data);
-                    }
-                    
-                    let output = data;
                     if (this.lastSentCommand) {
-                        const cmdEcho = this.lastSentCommand + '\r\n';
-                        if (output.startsWith(cmdEcho)) {
-                            output = output.slice(cmdEcho.length);
+                        this.pendingOutput += data;
+                        
+                        if (this.responseTimer) {
+                            clearTimeout(this.responseTimer);
                         }
-                        this.lastSentCommand = '';
-                    }
-                    
-                    if (output) {
-                        this.writeEmitter.fire(output);
+                        
+                        this.responseTimer = setTimeout(() => {
+                            this.flushResponse();
+                        }, 50);
+                    } else {
+                        if (this.logger) {
+                            this.logger.logOutput(data);
+                        }
+                        this.writeEmitter.fire(data);
                     }
                 },
                 onError: (error: Error) => {

@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.41-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.42-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.41.vsix` 文件
+1. 下载 `ipop-telnet-1.0.42.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -336,6 +336,32 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.42 (2026-05-20)
+
+**关键改进**
+- **实现标准 Telnet 交互 Terminal**：缓冲响应 + 延迟处理 + 条件删除
+
+**技术实现**
+- 字符回显：立即显示（保持当前行为）
+- 命令响应：缓冲 50ms，等待分片到达
+- 条件删除：响应有命令回显时删除用户输入行，否则保留
+
+**流程设计**
+```
+输入字符 → 服务器回显 → onData → lastSentCommand 为空 → 立即输出
+按回车 → 记录 lastSentCommand → 发送命令 → 收到响应 → 缓冲 → 50ms 后处理
+```
+
+**显示效果**
+```
+输入过程中：
+attach_to_123$ pwd     ← 用户输入，服务器回显，正常显示
+
+按回车后：
+/root/                 ← 仅显示命令结果
+attach_to_123$         ← 新提示符
+```
 
 ### v1.0.41 (2026-05-20)
 
