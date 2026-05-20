@@ -2,7 +2,7 @@
   "name": "ipop-telnet",
   "displayName": "IPOP Telnet Terminal",
   "description": "Telnet terminal with smart code completion for VSCode",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "publisher": "ipop",
   "engines": {
     "vscode": "^1.85.0"
@@ -384,6 +384,55 @@
             "High Contrast theme"
           ],
           "description": "Terminal display theme"
+        },
+        "ipop.webview.cursorStyle": {
+          "type": "string",
+          "default": "block",
+          "enum": ["block", "underline", "bar"],
+          "enumDescriptions": [
+            "Block cursor (default)",
+            "Underline cursor",
+            "Vertical bar cursor"
+          ],
+          "description": "Cursor style in terminal"
+        },
+        "ipop.webview.cursorBlink": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable cursor blinking animation"
+        },
+        "ipop.completion.maxItems": {
+          "type": "number",
+          "default": 10,
+          "description": "Maximum number of items in completion dropdown"
+        },
+        "ipop.completion.delay": {
+          "type": "number",
+          "default": 200,
+          "description": "Delay before auto-triggering completion (ms)"
+        },
+        "ipop.completion.sources.history": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable completion from command history"
+        },
+        "ipop.completion.sources.commands": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable completion from predefined commands"
+        },
+        "ipop.completion.sources.symbols": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable completion from indexed symbols"
+        },
+        "ipop.commands.predefined": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "List of predefined commands for completion"
         }
       }
     },

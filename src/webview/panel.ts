@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { TelnetConnection } from '../types';
 import { TelnetClient } from '../telnet/client';
 import { getWebviewContent, WebviewConfig } from './content';
-import { WebviewMessage, ExtensionMessage } from './types';
+import { WebviewMessage, ExtensionMessage, CompletionItem, CompletionConfig } from './types';
 import { getHistory } from '../completion/history';
 import { getSymbolIndexer } from '../completion/indexer';
 import { SessionLogger } from '../logger';
@@ -119,6 +119,10 @@ export class IPOPWebViewPanel {
                 this.provideCompletion(message.text || '');
                 break;
 
+            case 'requestCompletions':
+                this.provideCompletions(message.partialInput || '');
+                break;
+
             case 'requestHistory':
                 this.sendHistoryList();
                 break;
@@ -171,11 +175,10 @@ export class IPOPWebViewPanel {
 
     private provideCompletion(partial: string): void {
         try {
-            const indexer = getSymbolIndexer();
-            const symbols = indexer.search(partial);
-
-            if (symbols.length > 0) {
-                const completion = symbols[0].insertText;
+            const completions = this.getAggregatedCompletions(partial, 1);
+            
+            if (completions.length > 0) {
+                const completion = completions[0].text;
                 this.sendMessage({
                     command: 'completionResult',
                     completion
@@ -184,6 +187,97 @@ export class IPOPWebViewPanel {
         } catch (error) {
             console.error('Completion error:', error);
         }
+    }
+    
+    private provideCompletions(partial: string): void {
+        try {
+            const config = this.getCompletionConfig();
+            const completions = this.getAggregatedCompletions(partial, config.maxItems);
+            
+            this.sendMessage({
+                command: 'completionsList',
+                completions
+            });
+        } catch (error) {
+            console.error('Completions error:', error);
+        }
+    }
+    
+    private getCompletionConfig(): CompletionConfig {
+        const config = vscode.workspace.getConfiguration('ipop.completion');
+        return {
+            maxItems: config.get<number>('maxItems', 10),
+            autoTrigger: config.get<boolean>('autoTrigger', false),
+            minChars: config.get<number>('minChars', 2),
+            delay: config.get<number>('delay', 200),
+            sources: {
+                history: config.get<boolean>('sources.history', true),
+                commands: config.get<boolean>('sources.commands', true),
+                symbols: config.get<boolean>('sources.symbols', true)
+            }
+        };
+    }
+    
+    private getAggregatedCompletions(partial: string, maxItems: number): CompletionItem[] {
+        const config = this.getCompletionConfig();
+        const completions: CompletionItem[] = [];
+        const partialLower = partial.toLowerCase();
+        
+        // Priority: history > commands > symbols
+        // History source
+        if (config.sources.history) {
+            try {
+                const history = getHistory();
+                const recentCommands = history.getRecentCommands(100);
+                const matchedCommands: CompletionItem[] = recentCommands
+                    .filter(cmd => cmd.toLowerCase().startsWith(partialLower))
+                    .map((cmd, idx) => ({
+                        text: cmd,
+                        type: 'history' as 'history',
+                        detail: 'Used ' + history.getFrequency(cmd) + ' times',
+                        priority: 100 - idx
+                    }));
+                completions.push(...matchedCommands);
+            } catch {}
+        }
+        
+        // Commands source (predefined commands if available)
+        if (config.sources.commands) {
+            try {
+                const commandsConfig = vscode.workspace.getConfiguration('ipop.commands');
+                const predefinedCommands = commandsConfig.get<string[]>('predefined', []);
+                const matchedCommands: CompletionItem[] = predefinedCommands
+                    .filter(cmd => cmd.toLowerCase().startsWith(partialLower))
+                    .map(cmd => ({
+                        text: cmd,
+                        type: 'command' as 'command',
+                        detail: 'Predefined command',
+                        priority: 50
+                    }));
+                completions.push(...matchedCommands);
+            } catch {}
+        }
+        
+        // Symbols source
+        if (config.sources.symbols) {
+            try {
+                const indexer = getSymbolIndexer();
+                const symbols = indexer.search(partial);
+                const matchedSymbols: CompletionItem[] = symbols
+                    .slice(0, maxItems)
+                    .map(sym => ({
+                        text: sym.insertText,
+                        type: 'symbol' as 'symbol',
+                        detail: sym.detail || sym.name,
+                        priority: 30
+                    }));
+                completions.push(...matchedSymbols);
+            } catch {}
+        }
+        
+        // Sort by priority and limit
+        completions.sort((a, b) => b.priority - a.priority);
+        return completions.slice(0, maxItems);
     }
 
     private sendHistoryList(): void {

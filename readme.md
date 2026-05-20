@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-2.0.2-blue.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -336,6 +336,48 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v2.0.2 (2026-05-20) - ANSI 终端与智能补全
+
+**新增功能**
+- **ANSI 完整支持**：256 色映射、RGB 真彩色、SGR 格式（粗体、斜体、下划线、删除线等）
+- **虚拟终端缓冲区**：可配置最大行数（默认 1000），支持滚动历史
+- **光标样式**：支持 block/underline/bar 三种样式，可配置闪烁动画
+- **智能 Tab 补全**：多源聚合补全（历史 > 命令 > 符号），优先级排序
+- **补全下拉菜单**：显示补全项详情、类型标签，支持键盘导航（↑↓ Tab Enter Esc）
+- **自动补全触发**：可配置自动触发（minChars、delay、maxItems）
+- **补全源配置**：可独立启用/禁用 history、commands、symbols 三种补全源
+- **预定义命令**：支持配置预定义命令列表用于补全
+
+**技术实现**
+- ANSI 解析器：完整解析 SGR、光标移动、清屏、滚动等序列
+- 样式管理器：CSS 样式状态管理和转换
+- 虚拟终端缓冲区：行/字符缓冲，光标位置管理
+- 渲染器：HTML 渲染输出，支持样式和光标显示
+- 补全聚合器：多源补全合并，优先级排序
+- WebView 集成：前端渲染器、下拉菜单、键盘导航
+
+**新增配置项**
+- `ipop.webview.cursorStyle`: 光标样式（block/underline/bar）
+- `ipop.webview.cursorBlink`: 光标闪烁开关
+- `ipop.completion.maxItems`: 补全列表最大项数
+- `ipop.completion.delay`: 自动补全延迟（ms）
+- `ipop.completion.sources.history`: 历史补全源开关
+- `ipop.completion.sources.commands`: 命令补全源开关
+- `ipop.completion.sources.symbols`: 符号补全源开关
+- `ipop.commands.predefined`: 预定义命令列表
+
+**新增文件**
+- `src/webview/ansi.ts`: ANSI 解析器
+- `src/webview/style-manager.ts`: 样式管理器
+- `src/webview/terminal-buffer.ts`: 虚拟终端缓冲区
+- `src/webview/renderer.ts`: HTML 渲染器
+
+**修改文件**
+- `src/webview/content.ts`: 集成 ANSI 渲染、补全下拉菜单
+- `src/webview/panel.ts`: 补全聚合逻辑、配置读取
+- `src/webview/types.ts`: 补全相关类型定义
+- `package.json`: 新增配置项
 
 ### v2.0.1 (2026-05-20) - 功能增强
 

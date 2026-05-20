@@ -319,6 +319,78 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
         ::-webkit-scrollbar-thumb:hover {
             background: #4f4f4f;
         }
+        
+        .term-line {
+            white-space: pre;
+            min-height: 1.2em;
+        }
+        
+        .cursor-block {
+            background: #d4d4d4;
+            color: #1e1e1e;
+            padding: 0;
+        }
+        
+        .cursor-underline {
+            text-decoration: underline;
+            text-decoration-color: #d4d4d4;
+            text-decoration-thickness: 2px;
+        }
+        
+        .cursor-bar {
+            border-left: 2px solid #d4d4d4;
+            padding-left: 1px;
+        }
+        
+        .cursor-blink {
+            animation: cursorBlink 1s step-end infinite;
+        }
+        
+        @keyframes cursorBlink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        .completion-dropdown {
+            position: absolute;
+            background: #252526;
+            border: 1px solid #454545;
+            border-radius: 3px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        .completion-item {
+            padding: 4px 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        
+        .completion-item:hover,
+        .completion-item.selected {
+            background: #094771;
+        }
+        
+        .completion-item-text {
+            color: #d4d4d4;
+        }
+        
+        .completion-item-type {
+            color: #808080;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+        
+        .completion-item-detail {
+            color: #608b4e;
+            font-size: 11px;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -387,6 +459,226 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
     <script>
         const vscode = acquireVsCodeApi();
         
+        // ANSI Standard Colors (256-color support)
+        const ANSI_COLORS = {
+            30: '#000000', 31: '#cd3131', 32: '#0dbc79', 33: '#e5e510',
+            34: '#2472c8', 35: '#bc3fbc', 36: '#11a8cd', 37: '#e5e5e5',
+            40: '#000000', 41: '#cd3131', 42: '#0dbc79', 43: '#e5e510',
+            44: '#2472c8', 45: '#bc3fbc', 46: '#11a8cd', 47: '#e5e5e5',
+            90: '#808080', 91: '#f14c4c', 92: '#23d18b', 93: '#f5f543',
+            94: '#3b8eea', 95: '#d670d6', 96: '#29d8d8', 97: '#e5e5e5',
+            100: '#808080', 101: '#f14c4c', 102: '#23d18b', 103: '#f5f543',
+            104: '#3b8eea', 105: '#d670d6', 106: '#29d8d8', 107: '#e5e5e5'
+        };
+        
+        function color256ToRGB(n) {
+            if (n < 16) {
+                const fg = [30,31,32,33,34,35,36,37,90,91,92,93,94,95,96,97];
+                return ANSI_COLORS[fg[n]] || '#000000';
+            } else if (n < 232) {
+                const r = Math.floor((n - 16) / 36) * 51;
+                const g = Math.floor(((n - 16) % 36) / 6) * 51;
+                const b = ((n - 16) % 6) * 51;
+                return 'rgb(' + r + ',' + g + ',' + b + ')';
+            } else {
+                const gray = 8 + (n - 232) * 10;
+                return 'rgb(' + gray + ',' + gray + ',' + gray + ')';
+            }
+        }
+        
+        function escapeHtml(text) {
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;');
+        }
+        
+        class TerminalRenderer {
+            constructor(maxLines = 1000) {
+                this.maxLines = maxLines;
+                this.lines = [];
+                this.styleStack = [];
+                this.currentStyle = this.createDefaultStyle();
+            }
+            
+            createDefaultStyle() {
+                return { fg: null, bg: null, bold: false, dim: false, italic: false, underline: false, blink: false, inverse: false, hidden: false, strike: false };
+            }
+            
+            parseSGR(params) {
+                if (!params || params === '0') {
+                    return this.createDefaultStyle();
+                }
+                
+                const style = {};
+                const codes = params.split(';').map(c => parseInt(c, 10));
+                
+                for (let i = 0; i < codes.length; i++) {
+                    const code = codes[i];
+                    
+                    if (code === 0) return this.createDefaultStyle();
+                    else if (code === 1) style.bold = true;
+                    else if (code === 2) style.dim = true;
+                    else if (code === 3) style.italic = true;
+                    else if (code === 4) style.underline = true;
+                    else if (code === 5 || code === 6) style.blink = true;
+                    else if (code === 7) style.inverse = true;
+                    else if (code === 8) style.hidden = true;
+                    else if (code === 9) style.strike = true;
+                    else if (code === 22) { style.bold = false; style.dim = false; }
+                    else if (code === 23) style.italic = false;
+                    else if (code === 24) style.underline = false;
+                    else if (code === 25) style.blink = false;
+                    else if (code === 27) style.inverse = false;
+                    else if (code === 28) style.hidden = false;
+                    else if (code === 29) style.strike = false;
+                    else if (code >= 30 && code <= 37) style.fg = ANSI_COLORS[code];
+                    else if (code === 38 && i + 1 < codes.length) {
+                        const mode = codes[i + 1];
+                        if (mode === 5 && i + 2 < codes.length) {
+                            style.fg = color256ToRGB(codes[i + 2]);
+                            i += 2;
+                        } else if (mode === 2 && i + 4 < codes.length) {
+                            style.fg = 'rgb(' + codes[i+2] + ',' + codes[i+3] + ',' + codes[i+4] + ')';
+                            i += 4;
+                        }
+                    }
+                    else if (code === 39) style.fg = null;
+                    else if (code >= 40 && code <= 47) style.bg = ANSI_COLORS[code];
+                    else if (code === 48 && i + 1 < codes.length) {
+                        const mode = codes[i + 1];
+                        if (mode === 5 && i + 2 < codes.length) {
+                            style.bg = color256ToRGB(codes[i + 2]);
+                            i += 2;
+                        } else if (mode === 2 && i + 4 < codes.length) {
+                            style.bg = 'rgb(' + codes[i+2] + ',' + codes[i+3] + ',' + codes[i+4] + ')';
+                            i += 4;
+                        }
+                    }
+                    else if (code === 49) style.bg = null;
+                    else if (code >= 90 && code <= 97) style.fg = ANSI_COLORS[code];
+                    else if (code >= 100 && code <= 107) style.bg = ANSI_COLORS[code];
+                }
+                
+                return style;
+            }
+            
+            styleToCSS(style) {
+                const parts = [];
+                if (style.fg) parts.push('color: ' + style.fg);
+                if (style.bg) parts.push('background: ' + style.bg);
+                if (style.bold) parts.push('font-weight: bold');
+                if (style.dim) parts.push('opacity: 0.5');
+                if (style.italic) parts.push('font-style: italic');
+                if (style.underline) parts.push('text-decoration: underline');
+                if (style.strike) parts.push('text-decoration: ' + (style.underline ? 'underline line-through' : 'line-through'));
+                if (style.inverse) parts.push('filter: invert(1)');
+                if (style.hidden) parts.push('visibility: hidden');
+                return parts.join('; ');
+            }
+            
+            process(text) {
+                const lines = [];
+                let currentLine = [];
+                let i = 0;
+                
+                while (i < text.length) {
+                    if (text[i] === '\\x1b' || (text[i] === '\\u001b' || text.charCodeAt(i) === 27)) {
+                        if (i + 1 < text.length && text[i + 1] === '[') {
+                            let j = i + 2;
+                            let params = '';
+                            while (j < text.length && /[0-9;]/.test(text[j])) {
+                                params += text[j];
+                                j++;
+                            }
+                            if (j < text.length) {
+                                const cmd = text[j];
+                                if (cmd === 'm') {
+                                    const newStyle = this.parseSGR(params);
+                                    this.currentStyle = { ...this.currentStyle, ...newStyle };
+                                }
+                                i = j + 1;
+                                continue;
+                            }
+                        }
+                    }
+                    
+                    if (text[i] === '\\n') {
+                        lines.push(currentLine);
+                        currentLine = [];
+                        i++;
+                        continue;
+                    }
+                    
+                    if (text[i] === '\\r') {
+                        i++;
+                        continue;
+                    }
+                    
+                    currentLine.push({ char: text[i], style: { ...this.currentStyle } });
+                    i++;
+                }
+                
+                if (currentLine.length > 0 || lines.length > 0) {
+                    lines.push(currentLine);
+                }
+                
+                return lines;
+            }
+            
+            renderLine(line) {
+                if (line.length === 0) return '<div class="term-line">&nbsp;</div>';
+                
+                let html = '<div class="term-line">';
+                let currentSpan = '';
+                let currentCSS = '';
+                
+                for (const cell of line) {
+                    const css = this.styleToCSS(cell.style);
+                    if (css !== currentCSS) {
+                        if (currentSpan) {
+                            html += currentCSS ? '<span style="' + currentCSS + '">' + escapeHtml(currentSpan) + '</span>' : escapeHtml(currentSpan);
+                        }
+                        currentSpan = cell.char;
+                        currentCSS = css;
+                    } else {
+                        currentSpan += cell.char;
+                    }
+                }
+                
+                if (currentSpan) {
+                    html += currentCSS ? '<span style="' + currentCSS + '">' + escapeHtml(currentSpan) + '</span>' : escapeHtml(currentSpan);
+                }
+                
+                html += '</div>';
+                return html;
+            }
+            
+            render(text) {
+                const lines = this.process(text);
+                
+                // Limit lines for performance
+                if (lines.length > this.maxLines) {
+                    lines.splice(0, lines.length - this.maxLines);
+                }
+                
+                this.lines = this.lines.concat(lines);
+                if (this.lines.length > this.maxLines) {
+                    this.lines = this.lines.slice(this.lines.length - this.maxLines);
+                }
+                
+                return this.lines.map(line => this.renderLine(line)).join('\\n');
+            }
+            
+            clear() {
+                this.lines = [];
+                this.currentStyle = this.createDefaultStyle();
+            }
+            
+            stripANSI(text) {
+                return text.replace(/\\x1b\\[[0-9;]*[A-Za-z]/g, '').replace(/\\u001b\\[[0-9;]*[A-Za-z]/g, '');
+            }
+        }
+        
+        const renderer = new TerminalRenderer(config.maxOutputLines);
+        
         const themes = [
             { id: 'dark', name: 'Dark (Default)' },
             { id: 'light', name: 'Light' },
@@ -412,6 +704,16 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
         let isRecording = false;
         let currentMacro = [];
         let savedMacros = [];
+        let completionDropdown = null;
+        let currentCompletions = [];
+        let selectedCompletionIndex = 0;
+        let completionPrefix = '';
+        let autoCompletionTimer = null;
+        let completionConfig = {
+            autoTrigger: false,
+            minChars: 2,
+            delay: 200
+        };
         
         const outputContent = document.getElementById('outputContent');
         const inputArea = document.getElementById('inputArea');
@@ -430,6 +732,12 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
         const filterList = document.getElementById('filterList');
         const themeSelect = document.getElementById('themeSelect');
         
+        // Create completion dropdown
+        completionDropdown = document.createElement('div');
+        completionDropdown.className = 'completion-dropdown';
+        completionDropdown.style.display = 'none';
+        document.body.appendChild(completionDropdown);
+        
         window.addEventListener('message', (event) => {
             const message = event.data;
             
@@ -445,22 +753,19 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
                 applyCompletion(message.completion);
             }
             
+            if (message.command === 'completionsList') {
+                showCompletionDropdown(message.completions || []);
+            }
+            
             if (message.command === 'historyList') {
                 commandHistory = message.history || [];
             }
         });
         
         function appendOutput(text) {
-            outputContent.textContent += text;
-            originalOutput = outputContent.textContent;
-            
-            // Limit output lines for performance
-            const lines = originalOutput.split('\\n');
-            if (lines.length > config.maxOutputLines) {
-                const trimmedLines = lines.slice(-config.maxOutputLines);
-                outputContent.textContent = trimmedLines.join('\\n');
-                originalOutput = outputContent.textContent;
-            }
+            const html = renderer.render(text);
+            outputContent.innerHTML = html;
+            originalOutput = renderer.stripANSI(text);
             
             if (isAutoScroll) {
                 outputContent.scrollTop = outputContent.scrollHeight;
@@ -488,7 +793,84 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
                 before.length + completion.length
             );
             
+            hideCompletionDropdown();
             inputArea.focus();
+        }
+        
+        function showCompletionDropdown(completions) {
+            if (completions.length === 0) {
+                hideCompletionDropdown();
+                return;
+            }
+            
+            currentCompletions = completions;
+            selectedCompletionIndex = 0;
+            
+            const cursorPos = inputArea.selectionStart;
+            const textBefore = inputArea.value.substring(0, cursorPos);
+            const lastWordMatch = textBefore.match(/\\S+$/);
+            completionPrefix = lastWordMatch ? lastWordMatch[0] : '';
+            
+            // Build dropdown content
+            completionDropdown.innerHTML = completions.map((item, index) => 
+                '<div class="completion-item' + (index === 0 ? ' selected' : '') + '" data-index="' + index + '">' +
+                    '<div>' +
+                        '<span class="completion-item-text">' + escapeHtml(item.text) + '</span>' +
+                        '<span class="completion-item-type">[' + item.type + ']</span>' +
+                    '</div>' +
+                    (item.detail ? '<div class="completion-item-detail">' + escapeHtml(item.detail) + '</div>' : '') +
+                '</div>'
+            ).join('');
+            
+            // Position dropdown above input area
+            const inputRect = inputArea.getBoundingClientRect();
+            completionDropdown.style.left = inputRect.left + 'px';
+            completionDropdown.style.bottom = (window.innerHeight - inputRect.top + 5) + 'px';
+            completionDropdown.style.maxWidth = inputRect.width + 'px';
+            completionDropdown.style.display = 'block';
+            
+            // Add click handlers
+            completionDropdown.querySelectorAll('.completion-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const index = parseInt(item.dataset.index);
+                    selectCompletion(index);
+                });
+            });
+        }
+        
+        function hideCompletionDropdown() {
+            completionDropdown.style.display = 'none';
+            currentCompletions = [];
+            selectedCompletionIndex = 0;
+        }
+        
+        function selectCompletion(index) {
+            if (index < 0 || index >= currentCompletions.length) return;
+            
+            const item = currentCompletions[index];
+            applyCompletion(item.text);
+        }
+        
+        function navigateCompletion(direction) {
+            if (currentCompletions.length === 0) return;
+            
+            const oldIndex = selectedCompletionIndex;
+            selectedCompletionIndex += direction;
+            
+            if (selectedCompletionIndex < 0) {
+                selectedCompletionIndex = currentCompletions.length - 1;
+            } else if (selectedCompletionIndex >= currentCompletions.length) {
+                selectedCompletionIndex = 0;
+            }
+            
+            // Update selection visual
+            completionDropdown.querySelectorAll('.completion-item').forEach((item, i) => {
+                item.classList.toggle('selected', i === selectedCompletionIndex);
+            });
+        }
+        
+        function isDropdownVisible() {
+            return completionDropdown.style.display !== 'none';
         }
         
         function matchShortcut(e, shortcut) {
@@ -510,17 +892,50 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
         }
         
         inputArea.addEventListener('keydown', (e) => {
+            // Handle completion dropdown navigation
+            if (isDropdownVisible()) {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    navigateCompletion(e.shiftKey ? -1 : 1);
+                    return;
+                }
+                
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    navigateCompletion(-1);
+                    return;
+                }
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    navigateCompletion(1);
+                    return;
+                }
+                
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    selectCompletion(selectedCompletionIndex);
+                    return;
+                }
+                
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    hideCompletionDropdown();
+                    return;
+                }
+            }
+            
             if (matchShortcut(e, config.sendShortcut)) {
                 e.preventDefault();
                 sendCurrentLineOrSelection();
             }
             
-            if (e.key === 'Tab') {
+            if (e.key === 'Tab' && !isDropdownVisible()) {
                 e.preventDefault();
-                requestCompletion();
+                requestCompletions();
             }
             
-            if (e.key === 'ArrowUp') {
+            if (e.key === 'ArrowUp' && !isDropdownVisible()) {
                 if (inputArea.selectionStart === 0 && historyIndex < commandHistory.length - 1) {
                     e.preventDefault();
                     if (historyIndex === -1) {
@@ -532,7 +947,7 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
                 }
             }
             
-            if (e.key === 'ArrowDown') {
+            if (e.key === 'ArrowDown' && !isDropdownVisible()) {
                 if (inputArea.selectionStart === inputArea.value.length) {
                     e.preventDefault();
                     if (historyIndex > 0) {
@@ -608,26 +1023,39 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             }
         }
         
+        function requestCompletions() {
+            const cursorPos = inputArea.selectionStart;
+            const textBefore = inputArea.value.substring(0, cursorPos);
+            const lastWordMatch = textBefore.match(/\\S+$/);
+            const lastWord = lastWordMatch ? lastWordMatch[0] : '';
+            
+            if (lastWord.length >= 2) {
+                vscode.postMessage({
+                    command: 'requestCompletions',
+                    partialInput: lastWord
+                });
+            }
+        }
+        
         searchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
             
             if (!searchTerm) {
-                outputContent.innerHTML = originalOutput.replace(/\\n/g, '<br>');
+                const html = renderer.lines.map(line => renderer.renderLine(line)).join('\\n');
+                outputContent.innerHTML = html;
                 return;
             }
             
-            const lines = originalOutput.split('\\n');
-            const highlighted = lines.map(line => {
-                if (line.toLowerCase().includes(searchTerm)) {
-                    return line.replace(
-                        new RegExp(searchTerm, 'gi'),
-                        '<span class="highlight">$&</span>'
-                    );
+            const html = renderer.lines.map(line => {
+                const lineText = line.map(c => c.char).join('');
+                if (lineText.toLowerCase().includes(searchTerm)) {
+                    const rendered = renderer.renderLine(line);
+                    return rendered.replace(new RegExp(searchTerm, 'gi'), '<span class="highlight">$&</span>');
                 }
-                return line;
-            }).join('<br>');
+                return renderer.renderLine(line);
+            }).join('\\n');
             
-            outputContent.innerHTML = highlighted;
+            outputContent.innerHTML = html;
         });
         
         // Filter functionality
@@ -664,7 +1092,8 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
         clearFiltersButton.addEventListener('click', () => {
             activeFilters = [];
             updateFilterList();
-            outputContent.textContent = originalOutput;
+            const html = renderer.lines.map(line => renderer.renderLine(line)).join('\\n');
+            outputContent.innerHTML = html;
         });
         
         function getRandomColor() {
@@ -690,30 +1119,47 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
         
         function applyFilters() {
             if (activeFilters.length === 0) {
-                outputContent.textContent = originalOutput;
+                const html = renderer.lines.map(line => renderer.renderLine(line)).join('\\n');
+                outputContent.innerHTML = html;
                 return;
             }
             
-            let filteredOutput = originalOutput;
+            let filteredLines = renderer.lines.slice();
             
             activeFilters.forEach(filter => {
                 try {
                     const regex = new RegExp(filter.pattern, 'gm');
                     
-                    if (filter.mode === 'highlight') {
-                        filteredOutput = filteredOutput.replace(regex, 
-                            \`<span style="background: \${filter.color}; color: #000; padding: 1px 2px;">\$&</span>\`
-                        );
-                    } else if (filter.mode === 'hide') {
-                        filteredOutput = filteredOutput.replace(regex, '');
-                    } else if (filter.mode === 'show') {
-                        const matches = filteredOutput.match(regex) || [];
-                        filteredOutput = matches.join('\\n');
-                    }
+                    filteredLines = filteredLines.map(line => {
+                        const lineText = line.map(c => c.char).join('');
+                        
+                        if (filter.mode === 'hide') {
+                            if (regex.test(lineText)) {
+                                return [];
+                            }
+                            return line;
+                        } else if (filter.mode === 'show') {
+                            if (regex.test(lineText)) {
+                                return line;
+                            }
+                            return [];
+                        }
+                        return line;
+                    });
                 } catch (e) {}
             });
             
-            outputContent.innerHTML = filteredOutput.replace(/\\n/g, '<br>');
+            let html = filteredLines.map(line => renderer.renderLine(line)).join('\\n');
+            
+            // Apply highlight filters
+            activeFilters.filter(f => f.mode === 'highlight').forEach(filter => {
+                try {
+                    const regex = new RegExp(filter.pattern, 'gi');
+                    html = html.replace(regex, '<span style="background: ' + filter.color + '; color: #000; padding: 1px 2px;">$&</span>');
+                } catch (e) {}
+            });
+            
+            outputContent.innerHTML = html;
         }
         
         // Theme functionality
@@ -755,7 +1201,8 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
         applyTheme(config.themeId);
         
         clearButton.addEventListener('click', () => {
-            outputContent.textContent = '';
+            renderer.clear();
+            outputContent.innerHTML = '';
             originalOutput = '';
             vscode.postMessage({
                 command: 'clearOutput'
@@ -851,6 +1298,40 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             
             showTooltip(\`Playing macro: \${macro.name}\`, 0, 0);
         }
+        
+        // Auto completion trigger
+        inputArea.addEventListener('input', (e) => {
+            if (!completionConfig.autoTrigger) return;
+            
+            if (autoCompletionTimer) {
+                clearTimeout(autoCompletionTimer);
+            }
+            
+            const cursorPos = inputArea.selectionStart;
+            const textBefore = inputArea.value.substring(0, cursorPos);
+            const lastWordMatch = textBefore.match(/\\S+$/);
+            const lastWord = lastWordMatch ? lastWordMatch[0] : '';
+            
+            if (lastWord.length >= completionConfig.minChars) {
+                autoCompletionTimer = setTimeout(() => {
+                    vscode.postMessage({
+                        command: 'requestCompletions',
+                        partialInput: lastWord
+                    });
+                }, completionConfig.delay);
+            } else {
+                hideCompletionDropdown();
+            }
+        });
+        
+        // Hide dropdown on blur
+        inputArea.addEventListener('blur', (e) => {
+            setTimeout(() => {
+                if (!completionDropdown.contains(document.activeElement)) {
+                    hideCompletionDropdown();
+                }
+            }, 100);
+        });
         
         inputArea.focus();
     </script>
