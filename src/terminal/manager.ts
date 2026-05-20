@@ -41,6 +41,7 @@ export class TerminalManager implements vscode.Pseudoterminal {
     private historyIndex: number = -1;
     private historyMatches: string[] = [];
     private savedInputBeforeHistory: string = '';
+    private lastSentCommand: string = '';
 
     constructor(connection: TelnetConnection) {
         this.connection = connection;
@@ -104,12 +105,16 @@ export class TerminalManager implements vscode.Pseudoterminal {
         }
 
 if (data === '\r') {
+            this.writeEmitter.fire('\r');
+            this.writeEmitter.fire('\x1b[2K');
+            
             if (this.logger) {
                 this.logger.logInput(this.inputBuffer);
             }
             try {
                 getHistory().recordCommand(this.inputBuffer, 'user');
             } catch {}
+            this.lastSentCommand = this.inputBuffer;
             this.client.send(this.inputBuffer);
             
             this.inputBuffer = '';
@@ -297,7 +302,19 @@ if (data === '\r') {
                     if (this.logger) {
                         this.logger.logOutput(data);
                     }
-                    this.writeEmitter.fire(data);
+                    
+                    let output = data;
+                    if (this.lastSentCommand) {
+                        const cmdEcho = this.lastSentCommand + '\r\n';
+                        if (output.startsWith(cmdEcho)) {
+                            output = output.slice(cmdEcho.length);
+                        }
+                        this.lastSentCommand = '';
+                    }
+                    
+                    if (output) {
+                        this.writeEmitter.fire(output);
+                    }
                 },
                 onError: (error: Error) => {
                     if (this.logger) {
