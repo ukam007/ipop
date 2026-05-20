@@ -233,11 +233,13 @@ if (data === '\r') {
             this.logger.logOutput(this.pendingOutput);
         }
         
-        // 删除用户输入的信息（整行）
-        this.writeEmitter.fire('\r');
-        this.writeEmitter.fire('\x1b[2K');
+        // 仅删除用户输入的字符（保留提示符）
+        const inputLen = this.lastSentCommand.length;
+        for (let i = 0; i < inputLen; i++) {
+            this.writeEmitter.fire('\b \b');
+        }
         
-        // 显示服务器响应（仅保留服务器回显）
+        // 显示服务器响应
         let output = this.pendingOutput;
         this.lastSentCommand = '';
         this.pendingOutput = '';
