@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.32-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.33-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.32.vsix` 文件
+1. 下载 `ipop-telnet-1.0.33.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -336,6 +336,28 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.33 (2026-05-18)
+
+**关键修复**
+- **回车后删除原始命令**：避免冗余显示，仅显示服务器返回信息
+
+**技术改进**
+- 回车时记录输入长度
+- 发送命令后，退格删除用户输入的内容
+- 换行后显示服务器响应
+
+**显示效果**
+```
+修复前：
+  attach_to_123$ pwd  ← 用户输入
+  pwd                  ← 服务器回显（冗余）
+  /root/               ← 命令结果
+
+修复后：
+  attach_to_123$      ← 用户输入被删除
+  /root/               ← 仅显示服务器返回
+```
 
 ### v1.0.32 (2026-05-18)
 
