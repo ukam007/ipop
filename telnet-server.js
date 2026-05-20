@@ -4,6 +4,7 @@ const iconv = require('iconv-lite');
 const PORT = 2323;
 const HOST = '127.0.0.1';
 const ENCODING = 'utf-8';
+const PROMPT = 'attach_to_123$ ';
 
 function encodeResponse(text) {
     return iconv.encode(text, ENCODING);
@@ -11,39 +12,65 @@ function encodeResponse(text) {
 
 const commands = {
     'help': () => encodeResponse('Available commands:\r\n' +
-        '  help     - Show this help\r\n' +
-        '  echo     - Echo back message\r\n' +
-        '  status   - Show server status\r\n' +
-        '  time     - Show current time\r\n' +
-        '  repeat   - Repeat message (repeat <n> <message>)\r\n' +
-        '  clear    - Clear screen\r\n' +
-        '  quit     - Disconnect\r\n' +
-        '  login    - Simulate login (login <user> <pass>)\r\n' +
-        '  ping     - Test connection\r\n' +
-        '  chinese  - Test Chinese encoding\r\n'),
-    'status': () => encodeResponse('Server Status:\r\n' +
-        `  Host: ${HOST}\r\n` +
-        `  Port: ${PORT}\r\n` +
-        `  Connections: ${server.connections || 0}\r\n` +
-        `  Uptime: ${process.uptime().toFixed(2)}s\r\n`),
-    'time': () => encodeResponse(`Current time: ${new Date().toISOString()}\r\n`),
-    'ping': () => encodeResponse('PONG!\r\n'),
-    'chinese': () => encodeResponse('中文测试: 你好世界 Hello World 中文支持\r\n'),
+        '  help        - Show this help\r\n' +
+        '  pwd         - Print working directory\r\n' +
+        '  ls          - List files\r\n' +
+        '  whoami      - Show current user\r\n' +
+        '  uname       - System information\r\n' +
+        '  date        - Show date/time\r\n' +
+        '  uptime      - Show uptime\r\n' +
+        '  free        - Memory usage\r\n' +
+        '  df          - Disk usage\r\n' +
+        '  ps          - Process list\r\n' +
+        '  ifconfig    - Network interfaces\r\n' +
+        '  ping        - Ping test\r\n' +
+        '  route       - Routing table\r\n' +
+        '  netstat     - Network statistics\r\n' +
+        '  iptables    - Firewall rules\r\n' +
+        '  exit        - Exit session\r\n'),
+    'pwd': () => encodeResponse('/root\r\n'),
+    'ls': () => encodeResponse('bin  boot  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var\r\n'),
+    'ls -la': () => encodeResponse('total 64\r\n' +
+        'drwxr-xr-x  18 root root  4096 Jan  1 00:00 .\r\n' +
+        'drwxr-xr-x  18 root root  4096 Jan  1 00:00 ..\r\n' +
+        'drwxr-xr-x   2 root root  4096 Jan  1 00:00 bin\r\n' +
+        'drwxr-xr-x   4 root root  4096 Jan  1 00:00 boot\r\n'),
+    'whoami': () => encodeResponse('root\r\n'),
+    'uname': () => encodeResponse('Linux\r\n'),
+    'uname -a': () => encodeResponse('Linux attach_to_123 5.4.0-generic #1 SMP x86_64 GNU/Linux\r\n'),
+    'date': () => encodeResponse(`${new Date().toISOString()}\r\n`),
+    'uptime': () => encodeResponse(' 00:00:01 up 1 day, 1 user, load average: 0.00, 0.01, 0.05\r\n'),
+    'free': () => encodeResponse('              total        used        free\r\n' +
+        'Mem:           2048         512        1024\r\n' +
+        'Swap:          1024           0        1024\r\n'),
+    'df': () => encodeResponse('Filesystem     1K-blocks    Used Available\r\n' +
+        '/dev/sda1        20480000 5120000  15360000\r\n'),
+    'df -h': () => encodeResponse('Filesystem      Size  Used Avail\r\n' +
+        '/dev/sda1       20G   5G   15G\r\n'),
+    'ps': () => encodeResponse('  PID TTY          TIME CMD\r\n' +
+        '    1 pts/0    00:00:00 bash\r\n'),
+    'ifconfig': () => encodeResponse('eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500\r\n' +
+        '        inet 192.168.1.100  netmask 255.255.255.0\r\n' +
+        '        ether 00:11:22:33:44:55\r\n' +
+        'lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536\r\n' +
+        '        inet 127.0.0.1  netmask 255.0.0.0\r\n'),
+    'ping': () => encodeResponse('PING 127.0.0.1: 56 data bytes\r\n' +
+        '64 bytes from 127.0.0.1: time=0.1 ms\r\n'),
+    'ping 8.8.8.8': () => encodeResponse('PING 8.8.8.8: 56 data bytes\r\n' +
+        '64 bytes from 8.8.8.8: time=10.5 ms\r\n'),
+    'route': () => encodeResponse('Kernel IP routing table\r\n' +
+        'Destination     Gateway         Genmask         Iface\r\n' +
+        'default         192.168.1.1     0.0.0.0         eth0\r\n'),
+    'netstat': () => encodeResponse('Active Internet connections\r\n' +
+        'Proto Recv-Q Send-Q Local Address   Foreign Address  State\r\n' +
+        'tcp        0      0 0.0.0.0:22      0.0.0.0:*        LISTEN\r\n'),
+    'iptables': () => encodeResponse('Chain INPUT (policy ACCEPT)\r\n' +
+        'target     prot opt source         destination\r\n'),
+    'echo': (args) => encodeResponse((args.join(' ') || '') + '\r\n'),
     'clear': () => Buffer.from('\x1b[2J\x1b[H'),
-    'quit': (client) => {
+    'exit': (client) => {
         client.write(encodeResponse('Goodbye!\r\n'));
         client.end();
-        return null;
-    },
-    'login': (client, args) => {
-        const user = args[0] || 'guest';
-        const pass = args[1] || '';
-        client.write(encodeResponse(`Login attempt: user=${user}, pass=${pass ? 'provided' : 'empty'}\r\n`));
-        if (user === 'admin' && pass === 'admin') {
-            client.write(encodeResponse('Login successful! Welcome admin.\r\n'));
-        } else {
-            client.write(encodeResponse('Login failed. Use: login admin admin\r\n'));
-        }
         return null;
     }
 };
@@ -53,30 +80,20 @@ function handleCommand(data, client) {
     if (!trimmed) return null;
 
     const parts = trimmed.split(/\s+/);
-    const originalCmd = parts[0];
     const cmd = parts[0].toLowerCase();
     const args = parts.slice(1);
 
-    if (cmd === 'echo') {
-        return encodeResponse((args.join(' ') || '(empty)') + '\r\n');
-    }
-    
-    if (cmd === 'repeat') {
-        const count = parseInt(args[0]) || 1;
-        const msg = args.slice(1).join(' ') || 'repeat test';
-        let result = '';
-        for (let i = 0; i < Math.min(count, 10); i++) {
-            result += `${i+1}: ${msg}\r\n`;
-        }
-        return encodeResponse(result);
+    const fullCmd = cmd + ' ' + args[0];
+    if (commands[fullCmd]) {
+        return commands[fullCmd](args.slice(1));
     }
 
     if (commands[cmd]) {
-        const response = commands[cmd](client, args);
+        const response = commands[cmd](args, client);
         return response;
     }
     
-    return encodeResponse(`Unknown command: ${originalCmd}. Type 'help' for available commands.\r\n`);
+    return encodeResponse(`${trimmed}: command not found\r\n`);
 }
 
 const server = net.createServer((client) => {
@@ -84,11 +101,10 @@ const server = net.createServer((client) => {
     
     console.log(`Client connected from ${client.remoteAddress}:${client.remotePort}`);
     
-    client.write(encodeResponse('\r\n================================\r\n'));
-    client.write(encodeResponse('   IPOP Telnet Test Server\r\n'));
-    client.write(encodeResponse('================================\r\n\r\n'));
-    client.write(encodeResponse('Welcome! Type "help" for commands.\r\n\r\n'));
-    client.write(encodeResponse(`${HOST}:${PORT}> `));
+    client.write(encodeResponse('\r\n'));
+    client.write(encodeResponse(`Last login: ${new Date().toISOString()} from ${client.remoteAddress}\r\n`));
+    client.write(encodeResponse('\r\n'));
+    client.write(encodeResponse(PROMPT));
 
     let buffer = Buffer.alloc(0);
     
@@ -110,13 +126,14 @@ const server = net.createServer((client) => {
                 
                 if (cmd.trim()) {
                     console.log(`Command received: "${cmd.trim()}"`);
+                    client.write(encodeResponse(cmd + '\r\n'));
                     const response = handleCommand(cmd, client);
                     if (response) {
                         client.write(response);
                     }
-                    client.write(encodeResponse(`${HOST}:${PORT}> `));
+                    client.write(encodeResponse(PROMPT));
                 } else {
-                    client.write(encodeResponse(`${HOST}:${PORT}> `));
+                    client.write(encodeResponse(PROMPT));
                 }
                 i = -1; // Reset loop
             } else if (byte === 10) { // LF - skip
