@@ -104,8 +104,11 @@ export class TerminalManager implements vscode.Pseudoterminal {
         }
 
         if (data === '\r') {
-            this.clearInlineHint();
+            // 回到行首，清除当前行（用户输入内容），避免与服务器回显重叠
+            this.writeEmitter.fire('\r');
+            this.writeEmitter.fire('\x1b[K');
             this.writeEmitter.fire('\r\n');
+            
             if (this.logger) {
                 this.logger.logInput(this.inputBuffer);
             }
