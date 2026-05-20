@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { initConfigStore } from './config/store';
+import { initShortcutConfig, registerShortcutCommands } from './config/shortcuts';
 import { initProviders } from './sidebar/provider';
 import { registerCommands } from './commands';
 import { registerCompletionProvider, registerCompletionCommands } from './completion/provider';
@@ -10,6 +11,7 @@ import { LogsViewProvider } from './logger';
 export function activate(context: vscode.ExtensionContext): void {
     initConfigStore(context);
     initHistory(context);
+    initShortcutConfig(context);
     
     const providers = initProviders();
     
@@ -23,6 +25,7 @@ export function activate(context: vscode.ExtensionContext): void {
         registerCompletionProvider(),
         ...registerCommands(),
         ...registerCompletionCommands(),
+        ...registerShortcutCommands(),
         ...registerLogCommands(logsProvider)
     );
 

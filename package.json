@@ -2,7 +2,7 @@
   "name": "ipop-telnet",
   "displayName": "IPOP Telnet Terminal",
   "description": "Telnet terminal with smart code completion for VSCode",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "publisher": "ipop",
   "engines": {
     "vscode": "^1.85.0"
@@ -371,6 +371,19 @@
           "type": "number",
           "default": 1000,
           "description": "Maximum output lines to display (for performance)"
+        },
+        "ipop.webview.theme": {
+          "type": "string",
+          "default": "dark",
+          "enum": ["dark", "light", "solarized-dark", "monokai", "high-contrast"],
+          "enumDescriptions": [
+            "Dark theme (default)",
+            "Light theme",
+            "Solarized Dark theme",
+            "Monokai theme",
+            "High Contrast theme"
+          ],
+          "description": "Terminal display theme"
         }
       }
     },

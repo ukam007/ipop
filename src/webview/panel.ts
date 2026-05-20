@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
 import { TelnetConnection } from '../types';
 import { TelnetClient } from '../telnet/client';
-import { getWebviewContent } from './content';
+import { getWebviewContent, WebviewConfig } from './content';
 import { WebviewMessage, ExtensionMessage } from './types';
 import { getHistory } from '../completion/history';
 import { getSymbolIndexer } from '../completion/indexer';
 import { SessionLogger } from '../logger';
+import { getShortcutConfig } from '../config/shortcuts';
 
 export class IPOPWebViewPanel {
     private panel: vscode.WebviewPanel;
@@ -57,12 +58,45 @@ export class IPOPWebViewPanel {
     }
 
     private setWebviewContent(): void {
-        this.panel.webview.html = getWebviewContent(this.panel.webview, {
-            name: this.connection.name,
-            host: this.connection.host,
-            port: this.connection.port,
-            encoding: this.connection.encoding
-        });
+        try {
+            const shortcutConfig = getShortcutConfig();
+            const themeConfig = vscode.workspace.getConfiguration('ipop.webview');
+            const themeId = themeConfig.get<string>('theme', 'dark');
+            
+            const config: WebviewConfig = {
+                sendShortcut: shortcutConfig.getSendShortcut(),
+                maxHistorySize: shortcutConfig.getMaxHistorySize(),
+                autoScroll: shortcutConfig.getAutoScroll(),
+                inputMaxHeight: shortcutConfig.getInputMaxHeight(),
+                maxOutputLines: shortcutConfig.getMaxOutputLines(),
+                themeId: themeId
+            };
+            
+            this.panel.webview.html = getWebviewContent(this.panel.webview, {
+                name: this.connection.name,
+                host: this.connection.host,
+                port: this.connection.port,
+                encoding: this.connection.encoding
+            }, config);
+        } catch (error) {
+            console.error('Failed to get shortcut config:', error);
+            // Fallback to default config
+            const defaultConfig: WebviewConfig = {
+                sendShortcut: 'F8',
+                maxHistorySize: 100,
+                autoScroll: true,
+                inputMaxHeight: 400,
+                maxOutputLines: 1000,
+                themeId: 'dark'
+            };
+            
+            this.panel.webview.html = getWebviewContent(this.panel.webview, {
+                name: this.connection.name,
+                host: this.connection.host,
+                port: this.connection.port,
+                encoding: this.connection.encoding
+            }, defaultConfig);
+        }
     }
 
     private setupMessageHandler(): void {
@@ -103,6 +137,13 @@ export class IPOPWebViewPanel {
             case 'saveHistory':
                 if (message.text) {
                     getHistory().recordCommand(message.text, 'user');
+                }
+                break;
+
+            case 'saveTheme':
+                if (message.theme) {
+                    const themeConfig = vscode.workspace.getConfiguration('ipop.webview');
+                    themeConfig.update('theme', message.theme, vscode.ConfigurationTarget.Global);
                 }
                 break;
         }

@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-2.0.0.vsix` 文件
+1. 下载 `ipop-telnet-2.0.1.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -336,6 +336,24 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v2.0.1 (2026-05-20) - 功能增强
+
+**新增功能**
+- **输出过滤**：支持正则表达式过滤输出（高亮、隐藏、仅显示）
+- **主题切换**：支持 5 种主题（Dark、Light、Solarized Dark、Monokai、High Contrast）
+- **导出日志**：支持导出输出内容到文件
+- **命令宏**：支持录制和播放命令序列
+- **快捷键配置**：可配置发送命令快捷键
+- **性能优化**：限制输出行数，提升性能
+
+**技术实现**
+- 输出过滤：正则表达式匹配，多种过滤模式
+- 主题切换：CSS 变量动态更新，5 种预设主题
+- 导出日志：Blob API 下载，纯文本格式
+- 命令宏：录制状态管理，命令序列存储
+- 快捷键配置：VSCode configuration API
+- 性能优化：配置项 maxOutputLines
 
 ### v2.0.0 (2026-05-20) - 重大更新
 
