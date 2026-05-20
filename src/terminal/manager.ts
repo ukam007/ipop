@@ -41,8 +41,6 @@ export class TerminalManager implements vscode.Pseudoterminal {
     private historyIndex: number = -1;
     private historyMatches: string[] = [];
     private savedInputBeforeHistory: string = '';
-    private lastSentCommand: string = '';
-    private pendingOutput: string = '';
 
     constructor(connection: TelnetConnection) {
         this.connection = connection;
@@ -106,16 +104,12 @@ export class TerminalManager implements vscode.Pseudoterminal {
         }
 
 if (data === '\r') {
-            this.writeEmitter.fire('\r');
-            this.writeEmitter.fire('\x1b[2K');
-            
             if (this.logger) {
                 this.logger.logInput(this.inputBuffer);
             }
             try {
                 getHistory().recordCommand(this.inputBuffer, 'user');
             } catch {}
-            this.lastSentCommand = this.inputBuffer;
             this.client.send(this.inputBuffer);
             
             this.inputBuffer = '';
@@ -303,23 +297,7 @@ if (data === '\r') {
                     if (this.logger) {
                         this.logger.logOutput(data);
                     }
-                    
-                    this.pendingOutput += data;
-                    
-                    if (this.lastSentCommand) {
-                        const cmdPattern = this.lastSentCommand + '\r\n';
-                        if (this.pendingOutput.startsWith(cmdPattern)) {
-                            this.pendingOutput = this.pendingOutput.slice(cmdPattern.length);
-                        } else if (this.pendingOutput.startsWith('\r\n')) {
-                            this.pendingOutput = this.pendingOutput.slice(2);
-                        }
-                        this.lastSentCommand = '';
-                    }
-                    
-                    if (this.pendingOutput) {
-                        this.writeEmitter.fire(this.pendingOutput);
-                        this.pendingOutput = '';
-                    }
+                    this.writeEmitter.fire(data);
                 },
                 onError: (error: Error) => {
                     if (this.logger) {
