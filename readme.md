@@ -1,7 +1,7 @@
 # IPOP Telnet Terminal
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
-[![Version](https://img.shields.io/badge/version-1.0.39-green.svg)](https://github.com/ukam007/ipop)
+[![Version](https://img.shields.io/badge/version-1.0.40-green.svg)](https://github.com/ukam007/ipop)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
@@ -45,7 +45,7 @@ VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码
 
 ### 方式一：离线安装（推荐）
 
-1. 下载 `ipop-telnet-1.0.39.vsix` 文件
+1. 下载 `ipop-telnet-1.0.40.vsix` 文件
 2. VSCode 中按 `Ctrl+Shift+P`
 3. 输入 `Extensions: Install from VSIX`
 4. 选择下载的 `.vsix` 文件
@@ -336,6 +336,22 @@ node test-modules.js
 ---
 
 ## 更新日志
+
+### v1.0.40 (2026-05-20)
+
+**服务端改进**
+- **模拟真实设备行为**：调整 test/telnet-server.js 模拟真实 Linux 设备
+
+**新增命令**
+- `pwd`、`ls`、`cd`、`cat` 等文件系统命令
+- `whoami`、`uname`、`date`、`uptime` 等系统信息命令
+- `free`、`df`、`ps`、`top` 等资源监控命令
+- `ifconfig`、`ping`、`route`、`netstat`、`iptables` 等网络命令
+- `reboot`、`shutdown`、`exit` 等系统控制命令
+
+**响应格式**
+- 提示符改为 `attach_to_123$`
+- 回车后发送：命令回显 + 结果 + 新提示符
 
 ### v1.0.39 (2026-05-20)
 
