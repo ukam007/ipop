@@ -14,6 +14,7 @@ export class TerminalBuffer {
     private maxLines: number;
     private cursorVisible: boolean;
     private cols: number;
+    private currentStyle: StyleState;
     
     constructor(maxLines: number = 1000, cols: number = 80) {
         this.lines = [[]];
@@ -23,6 +24,11 @@ export class TerminalBuffer {
         this.maxLines = maxLines;
         this.cursorVisible = true;
         this.cols = cols;
+        this.currentStyle = createDefaultStyle();
+    }
+    
+    setCurrentStyle(style: StyleState): void {
+        this.currentStyle = style;
     }
     
     write(text: string): void {
@@ -50,13 +56,13 @@ export class TerminalBuffer {
         }
         
         while (this.cursorCol > this.lines[this.cursorRow].length) {
-            this.lines[this.cursorRow].push({ char: ' ', style: createDefaultStyle() });
+            this.lines[this.cursorRow].push({ char: ' ', style: { ...this.currentStyle } });
         }
         
         if (this.cursorCol < this.lines[this.cursorRow].length) {
-            this.lines[this.cursorRow][this.cursorCol] = { char, style: createDefaultStyle() };
+            this.lines[this.cursorRow][this.cursorCol] = { char, style: { ...this.currentStyle } };
         } else {
-            this.lines[this.cursorRow].push({ char, style: createDefaultStyle() });
+            this.lines[this.cursorRow].push({ char, style: { ...this.currentStyle } });
         }
         
         this.cursorCol++;
@@ -117,7 +123,7 @@ export class TerminalBuffer {
                 if (i === this.cursorRow) {
                     this.lines[i] = this.lines[i].slice(this.cursorCol);
                     for (let j = 0; j < this.cursorCol; j++) {
-                        this.lines[i].unshift({ char: ' ', style: createDefaultStyle() });
+                        this.lines[i].unshift({ char: ' ', style: { ...this.currentStyle } });
                     }
                 } else {
                     this.lines[i] = [];
@@ -145,7 +151,7 @@ export class TerminalBuffer {
             }
             this.lines[this.cursorRow] = this.lines[this.cursorRow].slice(this.cursorCol);
             for (let i = 0; i < this.cursorCol; i++) {
-                this.lines[this.cursorRow].unshift({ char: ' ', style: createDefaultStyle() });
+                this.lines[this.cursorRow].unshift({ char: ' ', style: { ...this.currentStyle } });
             }
         } else if (mode === 2) {
             while (this.cursorRow >= this.lines.length) {

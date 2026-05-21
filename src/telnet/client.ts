@@ -10,7 +10,7 @@ const DO = 0xFD;
 const DONT = 0xFE;
 const SB = 0xFA;
 const SE = 0xF0;
-const NOP = 0xF0;
+const NOP = 0xF1;
 
 const OPT_ECHO = 1;
 const OPT_SUPPRESS_GO_AHEAD = 3;
@@ -78,6 +78,7 @@ this.socket.on('connect', () => {
             this.socket.on('error', (err: Error) => {
                 clearTimeout(timeoutId);
                 this.events.onError(err);
+                reject(err);
             });
 
 this.socket.on('close', (hadError: boolean) => {

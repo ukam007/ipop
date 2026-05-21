@@ -74,10 +74,8 @@ const ANSI_STANDARD_COLORS: Record<number, string> = {
 
 function color256ToRGB(n: number): string {
     if (n < 16) {
-        const standardFg = [30, 31, 32, 33, 34, 35, 36, 37, 90, 91, 92, 93, 94, 95, 96, 97];
-        const standardBg = [40, 41, 42, 43, 44, 45, 46, 47, 100, 101, 102, 103, 104, 105, 106, 107];
         if (n < 8) return ANSI_STANDARD_COLORS[30 + n];
-        if (n < 16) return ANSI_STANDARD_COLORS[90 + (n - 8)];
+        return ANSI_STANDARD_COLORS[90 + (n - 8)];
     } else if (n < 232) {
         const r = Math.floor((n - 16) / 36) * 51;
         const g = Math.floor(((n - 16) % 36) / 6) * 51;
@@ -87,7 +85,6 @@ function color256ToRGB(n: number): string {
         const gray = 8 + (n - 232) * 10;
         return `rgb(${gray},${gray},${gray})`;
     }
-    return '#000000';
 }
 
 export function createDefaultStyle(): StyleState {
@@ -251,7 +248,7 @@ export class ANSIParser {
     
     parse(text: string): ANSIToken[] {
         const tokens: ANSIToken[] = [];
-        const ansiRegex = /\x1b\[([0-9;]*[A-Za-z])|\x1b\[([?!])(\d*[A-Za-z])|\x1b([78])|\x1b\[\?(\d+)([hl])/g;
+        const ansiRegex = /\x1b\[[0-9;]*[A-Za-z]|\x1b\[\?[0-9;]*[hl]|\x1b[78]/g;
         
         let lastIndex = 0;
         let match;
@@ -268,22 +265,24 @@ export class ANSIParser {
             
             const fullMatch = match[0];
             
-            if (match[3] === '7') {
+            if (fullMatch === '\x1b7') {
                 tokens.push({ type: 'cursor', cursorAction: { type: 'save' } });
-            } else if (match[3] === '8') {
+            } else if (fullMatch === '\x1b8') {
                 tokens.push({ type: 'cursor', cursorAction: { type: 'restore' } });
-            } else if (match[4] && match[5]) {
-                const privateMode = match[4];
-                const action = match[5];
-                if (privateMode === '25') {
-                    if (action === 'h') {
+            } else if (fullMatch.startsWith('\x1b[?')) {
+                const params = fullMatch.slice(3);
+                const lastChar = params.slice(-1);
+                const num = params.slice(0, -1);
+                
+                if (num === '25') {
+                    if (lastChar === 'h') {
                         tokens.push({ type: 'cursor-show' });
-                    } else if (action === 'l') {
+                    } else if (lastChar === 'l') {
                         tokens.push({ type: 'cursor-hide' });
                     }
                 }
-            } else if (match[1]) {
-                const params = match[1];
+            } else if (fullMatch.startsWith('\x1b[')) {
+                const params = fullMatch.slice(2);
                 const lastChar = params.slice(-1);
                 const codes = params.slice(0, -1);
                 

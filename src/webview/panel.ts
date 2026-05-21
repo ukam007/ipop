@@ -60,8 +60,9 @@ export class IPOPWebViewPanel {
     private setWebviewContent(): void {
         try {
             const shortcutConfig = getShortcutConfig();
-            const themeConfig = vscode.workspace.getConfiguration('ipop.webview');
-            const themeId = themeConfig.get<string>('theme', 'dark');
+            const webviewConfig = vscode.workspace.getConfiguration('ipop.webview');
+            const completionConfig = vscode.workspace.getConfiguration('ipop.completion');
+            const themeId = webviewConfig.get<string>('theme', 'dark');
             
             const config: WebviewConfig = {
                 sendShortcut: shortcutConfig.getSendShortcut(),
@@ -69,7 +70,12 @@ export class IPOPWebViewPanel {
                 autoScroll: shortcutConfig.getAutoScroll(),
                 inputMaxHeight: shortcutConfig.getInputMaxHeight(),
                 maxOutputLines: shortcutConfig.getMaxOutputLines(),
-                themeId: themeId
+                themeId: themeId,
+                cursorStyle: webviewConfig.get<string>('cursorStyle', 'block'),
+                cursorBlink: webviewConfig.get<boolean>('cursorBlink', true),
+                completionAutoTrigger: completionConfig.get<boolean>('autoTrigger', false),
+                completionMinChars: completionConfig.get<number>('minChars', 2),
+                completionDelay: completionConfig.get<number>('delay', 200)
             };
             
             this.panel.webview.html = getWebviewContent(this.panel.webview, {
@@ -80,14 +86,18 @@ export class IPOPWebViewPanel {
             }, config);
         } catch (error) {
             console.error('Failed to get shortcut config:', error);
-            // Fallback to default config
             const defaultConfig: WebviewConfig = {
                 sendShortcut: 'F8',
                 maxHistorySize: 100,
                 autoScroll: true,
                 inputMaxHeight: 400,
                 maxOutputLines: 1000,
-                themeId: 'dark'
+                themeId: 'dark',
+                cursorStyle: 'block',
+                cursorBlink: true,
+                completionAutoTrigger: false,
+                completionMinChars: 2,
+                completionDelay: 200
             };
             
             this.panel.webview.html = getWebviewContent(this.panel.webview, {
@@ -148,6 +158,15 @@ export class IPOPWebViewPanel {
                 if (message.theme) {
                     const themeConfig = vscode.workspace.getConfiguration('ipop.webview');
                     themeConfig.update('theme', message.theme, vscode.ConfigurationTarget.Global);
+                }
+                break;
+
+            case 'saveMacro':
+                if (message.name && message.commands) {
+                    const macroConfig = vscode.workspace.getConfiguration('ipop.macros');
+                    const macros = macroConfig.get<Array<{name: string; commands: string[]}>>('saved', []);
+                    macros.push({ name: message.name, commands: message.commands });
+                    macroConfig.update('saved', macros, vscode.ConfigurationTarget.Global);
                 }
                 break;
         }
@@ -297,8 +316,8 @@ export class IPOPWebViewPanel {
     private connectTelnet(): void {
         try {
             const config = vscode.workspace.getConfiguration('ipop.telnet');
-            const timeout = config.get<number>('timeout', 5000);
-            const keepaliveInterval = config.get<number>('keepaliveInterval', 30000);
+            const timeout = config.get<number>('timeout', 30000);
+            const keepaliveInterval = config.get<number>('keepaliveInterval', 10000);
 
             this.client = new TelnetClient(
                 this.connection.host,

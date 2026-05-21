@@ -38,6 +38,8 @@ export class TerminalRenderer {
             case 'sgr':
                 if (token.style) {
                     this.styleManager.applyStyle(token.style);
+                    const currentStyle = this.styleManager.getCurrentStyle();
+                    this.buffer.setCurrentStyle(currentStyle);
                 }
                 break;
                 

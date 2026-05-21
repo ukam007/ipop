@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { predefinedThemes, getThemeCSS, TerminalTheme } from './themes';
+import { predefinedThemes, TerminalTheme } from './themes';
 
 export interface WebviewConfig {
     sendShortcut: string;
@@ -8,6 +8,11 @@ export interface WebviewConfig {
     inputMaxHeight: number;
     maxOutputLines: number;
     themeId: string;
+    cursorStyle: string;
+    cursorBlink: boolean;
+    completionAutoTrigger: boolean;
+    completionMinChars: number;
+    completionDelay: number;
 }
 
 export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
@@ -222,8 +227,7 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             flex: 1;
             padding: 10px;
             overflow-y: auto;
-            white-space: pre-wrap;
-            word-wrap: break-word;
+            white-space: pre;
         }
         
         .output-line {
@@ -580,9 +584,14 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
                 let i = 0;
                 
                 while (i < text.length) {
-                    if (text[i] === '\\x1b' || (text[i] === '\\u001b' || text.charCodeAt(i) === 27)) {
+                    if (text.charCodeAt(i) === 27) {
                         if (i + 1 < text.length && text[i + 1] === '[') {
                             let j = i + 2;
+                            let isPrivate = false;
+                            if (j < text.length && text[j] === '?') {
+                                isPrivate = true;
+                                j++;
+                            }
                             let params = '';
                             while (j < text.length && /[0-9;]/.test(text[j])) {
                                 params += text[j];
@@ -590,24 +599,32 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
                             }
                             if (j < text.length) {
                                 const cmd = text[j];
-                                if (cmd === 'm') {
+                                if (!isPrivate && cmd === 'm') {
                                     const newStyle = this.parseSGR(params);
                                     this.currentStyle = { ...this.currentStyle, ...newStyle };
                                 }
                                 i = j + 1;
                                 continue;
                             }
+                        } else if (i + 1 < text.length && text[i + 1] === '7') {
+                            i += 2;
+                            continue;
+                        } else if (i + 1 < text.length && text[i + 1] === '8') {
+                            i += 2;
+                            continue;
                         }
+                        i++;
+                        continue;
                     }
                     
-                    if (text[i] === '\\n') {
+                    if (text[i] === '\\n' || text.charCodeAt(i) === 10) {
                         lines.push(currentLine);
                         currentLine = [];
                         i++;
                         continue;
                     }
                     
-                    if (text[i] === '\\r') {
+                    if (text[i] === '\\r' || text.charCodeAt(i) === 13) {
                         i++;
                         continue;
                     }
@@ -673,7 +690,7 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             }
             
             stripANSI(text) {
-                return text.replace(/\\x1b\\[[0-9;]*[A-Za-z]/g, '').replace(/\\u001b\\[[0-9;]*[A-Za-z]/g, '');
+                return text.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '').replace(/\x1b\[\?[0-9;]*[hl]/g, '').replace(/\x1b[78]/g, '');
             }
         }
         
@@ -692,7 +709,12 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             maxHistorySize: ${config.maxHistorySize},
             maxOutputLines: ${config.maxOutputLines},
             autoScroll: ${config.autoScroll},
-            themeId: '${config.themeId}'
+            themeId: '${config.themeId}',
+            cursorStyle: '${config.cursorStyle}',
+            cursorBlink: ${config.cursorBlink},
+            completionAutoTrigger: ${config.completionAutoTrigger},
+            completionMinChars: ${config.completionMinChars},
+            completionDelay: ${config.completionDelay}
         };
         
         let commandHistory = [];
@@ -710,9 +732,9 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
         let completionPrefix = '';
         let autoCompletionTimer = null;
         let completionConfig = {
-            autoTrigger: false,
-            minChars: 2,
-            delay: 200
+            autoTrigger: config.completionAutoTrigger,
+            minChars: config.completionMinChars,
+            delay: config.completionDelay
         };
         
         const outputContent = document.getElementById('outputContent');
@@ -750,7 +772,9 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             }
             
             if (message.command === 'completionResult') {
-                applyCompletion(message.completion);
+                if (message.completion) {
+                    applyCompletion(message.completion);
+                }
             }
             
             if (message.command === 'completionsList') {
@@ -1048,9 +1072,14 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             
             const html = renderer.lines.map(line => {
                 const lineText = line.map(c => c.char).join('');
-                if (lineText.toLowerCase().includes(searchTerm)) {
-                    const rendered = renderer.renderLine(line);
-                    return rendered.replace(new RegExp(searchTerm, 'gi'), '<span class="highlight">$&</span>');
+                const lowerText = lineText.toLowerCase();
+                if (lowerText.includes(searchTerm)) {
+                    let rendered = renderer.renderLine(line);
+                    try {
+                        const escapedSearch = searchTerm.replace(/[.*+?^|()\\[\\]\\\\]/g, '\\\\' + String.fromCharCode(38));
+                        rendered = rendered.replace(new RegExp(escapedSearch, 'gi'), '<span class="highlight">' + String.fromCharCode(36) + String.fromCharCode(38) + '</span>');
+                    } catch {}
+                    return rendered;
                 }
                 return renderer.renderLine(line);
             }).join('\\n');
