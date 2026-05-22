@@ -814,12 +814,10 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             document.body.style.userSelect = '';
         });
         
-        // Create completion dropdown inside terminal-input
         completionDropdown = document.createElement('div');
         completionDropdown.className = 'completion-dropdown';
         completionDropdown.style.display = 'none';
-        terminalInput.appendChild(completionDropdown);
-        terminalInput.style.position = 'relative';
+        document.body.appendChild(completionDropdown);
         
         window.addEventListener('message', (event) => {
             const message = event.data;
@@ -908,12 +906,10 @@ function appendOutput(text) {
                 '</div>'
             ).join('');
             
-            // Position dropdown above input area within terminal-input container
             const inputRect = inputArea.getBoundingClientRect();
-            const containerRect = terminalInput.getBoundingClientRect();
-            completionDropdown.style.left = (inputRect.left - containerRect.left) + 'px';
-            completionDropdown.style.bottom = (containerRect.bottom - inputRect.top + 5) + 'px';
-            completionDropdown.style.maxWidth = Math.min(inputRect.width, containerRect.width - 20) + 'px';
+            completionDropdown.style.left = inputRect.left + 'px';
+            completionDropdown.style.bottom = (window.innerHeight - inputRect.top + 5) + 'px';
+            completionDropdown.style.maxWidth = inputRect.width + 'px';
             completionDropdown.style.display = 'block';
             
             // Add click handlers
