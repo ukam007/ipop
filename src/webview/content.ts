@@ -390,11 +390,7 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
         }
         
         .caret-mirror {
-            position: absolute;
             visibility: hidden;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow: hidden;
             pointer-events: none;
             z-index: -1;
         }
@@ -858,7 +854,9 @@ let completionConfig = {
         document.body.appendChild(caretMirror);
         
         function getCaretPosition() {
+            const inputRect = inputArea.getBoundingClientRect();
             const styles = window.getComputedStyle(inputArea);
+            
             caretMirror.style.font = styles.font;
             caretMirror.style.fontFamily = styles.fontFamily;
             caretMirror.style.fontSize = styles.fontSize;
@@ -868,13 +866,14 @@ let completionConfig = {
             caretMirror.style.padding = styles.padding;
             caretMirror.style.border = styles.border;
             caretMirror.style.width = styles.width;
-            caretMirror.style.height = styles.height;
-            caretMirror.style.whiteSpace = styles.whiteSpace;
-            caretMirror.style.overflow = styles.overflow;
-            caretMirror.style.overflowWrap = styles.overflowWrap;
-            caretMirror.style.wordBreak = styles.wordBreak;
-            caretMirror.style.textIndent = styles.textIndent;
+            caretMirror.style.height = inputArea.clientHeight + 'px';
+            caretMirror.style.whiteSpace = 'pre-wrap';
+            caretMirror.style.overflow = 'hidden';
+            caretMirror.style.overflowWrap = 'break-word';
             caretMirror.style.boxSizing = styles.boxSizing;
+            caretMirror.style.position = 'absolute';
+            caretMirror.style.left = inputRect.left + 'px';
+            caretMirror.style.top = inputRect.top + 'px';
             
             const textBeforeCaret = inputArea.value.substring(0, inputArea.selectionStart);
             caretMirror.textContent = textBeforeCaret;
@@ -882,15 +881,14 @@ let completionConfig = {
             marker.textContent = '|';
             caretMirror.appendChild(marker);
             
+            caretMirror.style.transform = 'translateY(-' + inputArea.scrollTop + 'px)';
+            
             const markerRect = marker.getBoundingClientRect();
-            const inputRect = inputArea.getBoundingClientRect();
             return {
                 left: markerRect.left,
                 top: markerRect.top,
                 bottom: markerRect.bottom,
-                height: markerRect.height,
-                inputTop: inputRect.top,
-                inputLeft: inputRect.left
+                height: markerRect.height
             };
         }
         
