@@ -738,6 +738,13 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
                 }
                 
                 this.lines = this.lines.concat(lines);
+                
+                for (let i = this.lines.length - 1; i > 0; i--) {
+                    if (this.lines[i].length === 0 && this.lines[i - 1].length === 0) {
+                        this.lines.splice(i, 1);
+                    }
+                }
+                
                 if (this.lines.length > this.maxLines) {
                     this.lines = this.lines.slice(this.lines.length - this.maxLines);
                 }
