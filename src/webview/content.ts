@@ -389,6 +389,16 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             51%, 100% { opacity: 0; }
         }
         
+        .caret-mirror {
+            position: absolute;
+            visibility: hidden;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
         .completion-dropdown {
             position: absolute;
             background: #252526;
@@ -843,6 +853,47 @@ let completionConfig = {
             document.body.style.userSelect = '';
         });
         
+        const caretMirror = document.createElement('div');
+        caretMirror.className = 'caret-mirror';
+        document.body.appendChild(caretMirror);
+        
+        function getCaretPosition() {
+            const styles = window.getComputedStyle(inputArea);
+            caretMirror.style.font = styles.font;
+            caretMirror.style.fontFamily = styles.fontFamily;
+            caretMirror.style.fontSize = styles.fontSize;
+            caretMirror.style.fontWeight = styles.fontWeight;
+            caretMirror.style.lineHeight = styles.lineHeight;
+            caretMirror.style.letterSpacing = styles.letterSpacing;
+            caretMirror.style.padding = styles.padding;
+            caretMirror.style.border = styles.border;
+            caretMirror.style.width = styles.width;
+            caretMirror.style.height = styles.height;
+            caretMirror.style.whiteSpace = styles.whiteSpace;
+            caretMirror.style.overflow = styles.overflow;
+            caretMirror.style.overflowWrap = styles.overflowWrap;
+            caretMirror.style.wordBreak = styles.wordBreak;
+            caretMirror.style.textIndent = styles.textIndent;
+            caretMirror.style.boxSizing = styles.boxSizing;
+            
+            const textBeforeCaret = inputArea.value.substring(0, inputArea.selectionStart);
+            caretMirror.textContent = textBeforeCaret;
+            const marker = document.createElement('span');
+            marker.textContent = '|';
+            caretMirror.appendChild(marker);
+            
+            const markerRect = marker.getBoundingClientRect();
+            const inputRect = inputArea.getBoundingClientRect();
+            return {
+                left: markerRect.left,
+                top: markerRect.top,
+                bottom: markerRect.bottom,
+                height: markerRect.height,
+                inputTop: inputRect.top,
+                inputLeft: inputRect.left
+            };
+        }
+        
         completionDropdown = document.createElement('div');
         completionDropdown.className = 'completion-dropdown';
         completionDropdown.style.display = 'none';
@@ -935,15 +986,16 @@ function appendOutput(text) {
                 '</div>'
             ).join('');
             
-            const inputRect = inputArea.getBoundingClientRect();
+            const caretPos = getCaretPosition();
+            const containerRect = terminalInput.getBoundingClientRect();
             completionDropdown.style.display = 'block';
-            completionDropdown.style.left = inputRect.left + 'px';
-            completionDropdown.style.maxWidth = inputRect.width + 'px';
+            completionDropdown.style.left = caretPos.left + 'px';
+            completionDropdown.style.maxWidth = (containerRect.right - caretPos.left - 20) + 'px';
             completionDropdown.style.top = 'auto';
-            completionDropdown.style.bottom = (window.innerHeight - inputRect.top + 5) + 'px';
+            completionDropdown.style.bottom = (window.innerHeight - caretPos.top + 5) + 'px';
             
             const dropdownHeight = completionDropdown.offsetHeight;
-            const availableSpace = inputRect.top;
+            const availableSpace = caretPos.top;
             if (dropdownHeight > availableSpace) {
                 completionDropdown.style.bottom = '';
                 completionDropdown.style.top = '5px';
