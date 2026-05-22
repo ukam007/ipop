@@ -50,6 +50,13 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             flex-direction: column;
         }
         
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+        }
+        
         .status-bar {
             padding: 5px 10px;
             background: #2d2d2d;
@@ -103,10 +110,10 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
         
         .terminal-output {
             flex: 1;
-            min-height: 300px;
+            min-height: 0;
+            min-width: 0;
             display: flex;
             flex-direction: column;
-            border-bottom: 3px solid #3c3c3c;
         }
         
         .output-toolbar {
@@ -243,12 +250,27 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             color: #000000;
         }
         
+        .resize-handle {
+            width: 4px;
+            background: #3c3c3c;
+            cursor: col-resize;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+        
+        .resize-handle:hover,
+        .resize-handle.active {
+            background: #0e639c;
+        }
+        
         .terminal-input {
-            min-height: 100px;
-            max-height: ${config.inputMaxHeight}px;
+            flex: 0 0 30%;
+            min-width: 200px;
+            max-width: 80%;
             padding: 10px;
             display: flex;
             flex-direction: column;
+            overflow: visible;
         }
         
         .input-area {
@@ -412,47 +434,51 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             </div>
         </div>
         
-        <div class="terminal-output">
-            <div class="output-toolbar">
-                <div class="search-container">
-                    <input type="text" class="search-input" id="searchInput" placeholder="Search output...">
+        <div class="main-content">
+            <div class="terminal-output">
+                <div class="output-toolbar">
+                    <div class="search-container">
+                        <input type="text" class="search-input" id="searchInput" placeholder="Search output...">
+                    </div>
+                    <div class="toolbar-buttons">
+                        <select class="filter-select" id="themeSelect">
+                            ${predefinedThemes.map(t => `<option value="${t.id}" ${t.id === config.themeId ? 'selected' : ''}>${t.name}</option>`).join('')}
+                        </select>
+                        <button class="toolbar-button" id="filterToggleButton">Filter</button>
+                        <button class="toolbar-button" id="clearButton">Clear</button>
+                        <button class="toolbar-button" id="exportButton">Export</button>
+                    </div>
                 </div>
-                <div class="toolbar-buttons">
-                    <select class="filter-select" id="themeSelect">
-                        ${predefinedThemes.map(t => `<option value="${t.id}" ${t.id === config.themeId ? 'selected' : ''}>${t.name}</option>`).join('')}
-                    </select>
-                    <button class="toolbar-button" id="filterToggleButton">Filter</button>
-                    <button class="toolbar-button" id="clearButton">Clear</button>
-                    <button class="toolbar-button" id="exportButton">Export</button>
+                <div class="filter-container" id="filterContainer" style="display: none;">
+                    <div class="filter-inputs">
+                        <input type="text" class="filter-input" id="filterPattern" placeholder="Regex pattern...">
+                        <select class="filter-select" id="filterMode">
+                            <option value="highlight">Highlight</option>
+                            <option value="hide">Hide</option>
+                            <option value="show">Show only</option>
+                        </select>
+                        <button class="toolbar-button" id="addFilterButton">Add</button>
+                        <button class="toolbar-button" id="clearFiltersButton">Clear all</button>
+                    </div>
+                    <div class="filter-list" id="filterList"></div>
                 </div>
+                <div class="output-content" id="outputContent"></div>
             </div>
-            <div class="filter-container" id="filterContainer" style="display: none;">
-                <div class="filter-inputs">
-                    <input type="text" class="filter-input" id="filterPattern" placeholder="Regex pattern...">
-                    <select class="filter-select" id="filterMode">
-                        <option value="highlight">Highlight</option>
-                        <option value="hide">Hide</option>
-                        <option value="show">Show only</option>
-                    </select>
-                    <button class="toolbar-button" id="addFilterButton">Add</button>
-                    <button class="toolbar-button" id="clearFiltersButton">Clear all</button>
-                </div>
-                <div class="filter-list" id="filterList"></div>
-            </div>
-            <div class="output-content" id="outputContent"></div>
-        </div>
-        
-        <div class="terminal-input">
-            <textarea class="input-area" id="inputArea" rows="5" placeholder="Enter commands..."></textarea>
-            <div class="input-toolbar">
-                <div class="shortcut-hints">
-                    <span>${config.sendShortcut}: Send current line</span>
-                    <span>Up/Down: History</span>
-                    <span>Tab: Completion</span>
-                </div>
-                <div class="auto-scroll-toggle">
-                    <input type="checkbox" id="autoScrollCheckbox" ${config.autoScroll ? 'checked' : ''}>
-                    <label for="autoScrollCheckbox">Auto-scroll</label>
+            
+            <div class="resize-handle" id="resizeHandle"></div>
+            
+            <div class="terminal-input" id="terminalInput">
+                <textarea class="input-area" id="inputArea" rows="5" placeholder="Enter commands..."></textarea>
+                <div class="input-toolbar">
+                    <div class="shortcut-hints">
+                        <span>${config.sendShortcut}: Send current line</span>
+                        <span>Up/Down: History</span>
+                        <span>Tab: Completion</span>
+                    </div>
+                    <div class="auto-scroll-toggle">
+                        <input type="checkbox" id="autoScrollCheckbox" ${config.autoScroll ? 'checked' : ''}>
+                        <label for="autoScrollCheckbox">Auto-scroll</label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -753,12 +779,47 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
         const clearFiltersButton = document.getElementById('clearFiltersButton');
         const filterList = document.getElementById('filterList');
         const themeSelect = document.getElementById('themeSelect');
+        const resizeHandle = document.getElementById('resizeHandle');
+        const terminalInput = document.getElementById('terminalInput');
         
-        // Create completion dropdown
+        let isResizing = false;
+        let resizeStartX = 0;
+        let resizeStartWidth = 0;
+        
+        resizeHandle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            resizeStartX = e.clientX;
+            resizeStartWidth = terminalInput.offsetWidth;
+            resizeHandle.classList.add('active');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            const dx = resizeStartX - e.clientX;
+            const newWidth = resizeStartWidth + dx;
+            const mainWidth = terminalInput.parentElement.offsetWidth;
+            const minW = 200;
+            const maxW = mainWidth * 0.8;
+            terminalInput.style.flexBasis = Math.max(minW, Math.min(maxW, newWidth)) + 'px';
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (!isResizing) return;
+            isResizing = false;
+            resizeHandle.classList.remove('active');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        });
+        
+        // Create completion dropdown inside terminal-input
         completionDropdown = document.createElement('div');
         completionDropdown.className = 'completion-dropdown';
         completionDropdown.style.display = 'none';
-        document.body.appendChild(completionDropdown);
+        terminalInput.appendChild(completionDropdown);
+        terminalInput.style.position = 'relative';
         
         window.addEventListener('message', (event) => {
             const message = event.data;
@@ -847,11 +908,12 @@ function appendOutput(text) {
                 '</div>'
             ).join('');
             
-            // Position dropdown above input area
+            // Position dropdown above input area within terminal-input container
             const inputRect = inputArea.getBoundingClientRect();
-            completionDropdown.style.left = inputRect.left + 'px';
-            completionDropdown.style.bottom = (window.innerHeight - inputRect.top + 5) + 'px';
-            completionDropdown.style.maxWidth = inputRect.width + 'px';
+            const containerRect = terminalInput.getBoundingClientRect();
+            completionDropdown.style.left = (inputRect.left - containerRect.left) + 'px';
+            completionDropdown.style.bottom = (containerRect.bottom - inputRect.top + 5) + 'px';
+            completionDropdown.style.maxWidth = Math.min(inputRect.width, containerRect.width - 20) + 'px';
             completionDropdown.style.display = 'block';
             
             // Add click handlers
