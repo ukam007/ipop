@@ -559,6 +559,7 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
                 this.lines = [];
                 this.styleStack = [];
                 this.currentStyle = this.createDefaultStyle();
+                this.pendingLine = null;
             }
             
             createDefaultStyle() {
@@ -639,7 +640,7 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             
             process(text) {
                 const lines = [];
-                let currentLine = [];
+                let currentLine = this.pendingLine || [];
                 let i = 0;
                 
                 while (i < text.length) {
@@ -692,8 +693,10 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
                     i++;
                 }
                 
-                if (currentLine.length > 0 || lines.length > 0) {
-                    lines.push(currentLine);
+                if (currentLine.length > 0) {
+                    this.pendingLine = currentLine;
+                } else {
+                    this.pendingLine = null;
                 }
                 
                 return lines;
@@ -730,7 +733,6 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             render(text) {
                 const lines = this.process(text);
                 
-                // Limit lines for performance
                 if (lines.length > this.maxLines) {
                     lines.splice(0, lines.length - this.maxLines);
                 }
@@ -740,12 +742,14 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
                     this.lines = this.lines.slice(this.lines.length - this.maxLines);
                 }
                 
-                return this.lines.map(line => this.renderLine(line)).join('\\n');
+                const allLines = this.pendingLine ? [...this.lines, this.pendingLine] : this.lines;
+                return allLines.map(line => this.renderLine(line)).join('\\n');
             }
             
             clear() {
                 this.lines = [];
                 this.currentStyle = this.createDefaultStyle();
+                this.pendingLine = null;
             }
             
             stripANSI(text) {
