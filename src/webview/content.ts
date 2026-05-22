@@ -398,7 +398,6 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             overflow-y: auto;
             z-index: 1000;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            top: -9999px;
         }
         
         .completion-item {
@@ -940,7 +939,7 @@ function appendOutput(text) {
             completionDropdown.style.display = 'block';
             completionDropdown.style.left = inputRect.left + 'px';
             completionDropdown.style.maxWidth = inputRect.width + 'px';
-            completionDropdown.style.top = '';
+            completionDropdown.style.top = 'auto';
             completionDropdown.style.bottom = (window.innerHeight - inputRect.top + 5) + 'px';
             
             const dropdownHeight = completionDropdown.offsetHeight;
@@ -1132,20 +1131,6 @@ function appendOutput(text) {
                     commandHistory.unshift(lineText.trim());
                     historyIndex = -1;
                 }
-            }
-        }
-        
-        function requestCompletion() {
-            const cursorPos = inputArea.selectionStart;
-            const textBefore = inputArea.value.substring(0, cursorPos);
-            const lastWordMatch = textBefore.match(/\\S+$/);
-            const lastWord = lastWordMatch ? lastWordMatch[0] : '';
-            
-            if (lastWord.length >= 2) {
-                vscode.postMessage({
-                    command: 'requestCompletion',
-                    text: lastWord
-                });
             }
         }
         
@@ -1448,7 +1433,8 @@ function appendOutput(text) {
                 autoCompletionTimer = setTimeout(() => {
                     vscode.postMessage({
                         command: 'requestCompletions',
-                        partialInput: lastWord
+                        partialInput: lastWord,
+                        maxItems: completionConfig.maxItems
                     });
                 }, completionConfig.delay);
             } else {

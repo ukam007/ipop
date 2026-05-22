@@ -74,8 +74,8 @@ export class IPOPWebViewPanel {
                 cursorStyle: webviewConfig.get<string>('cursorStyle', 'block'),
                 cursorBlink: webviewConfig.get<boolean>('cursorBlink', true),
                 completionAutoTrigger: completionConfig.get<boolean>('autoTrigger', true),
-                completionMinChars: completionConfig.get<number>('minChars', 3),
-                completionDelay: completionConfig.get<number>('delay', 500),
+                completionMinChars: completionConfig.get<number>('minChars', 2),
+                completionDelay: completionConfig.get<number>('delay', 200),
                 completionMaxItems: completionConfig.get<number>('maxItems', 10)
             };
             
@@ -97,8 +97,8 @@ export class IPOPWebViewPanel {
                 cursorStyle: 'block',
                 cursorBlink: true,
                 completionAutoTrigger: true,
-                completionMinChars: 3,
-                completionDelay: 500,
+                completionMinChars: 2,
+                completionDelay: 200,
                 completionMaxItems: 10
             };
             
@@ -213,7 +213,7 @@ export class IPOPWebViewPanel {
     private provideCompletions(partial: string, maxItems?: number): void {
         try {
             const config = this.getCompletionConfig();
-            const limit = maxItems || config.maxItems;
+            const limit = maxItems ?? config.maxItems;
             const completions = this.getAggregatedCompletions(partial, limit);
             
             this.sendMessage({
@@ -229,7 +229,7 @@ export class IPOPWebViewPanel {
         const config = vscode.workspace.getConfiguration('ipop.completion');
         return {
             maxItems: config.get<number>('maxItems', 10),
-            autoTrigger: config.get<boolean>('autoTrigger', false),
+            autoTrigger: config.get<boolean>('autoTrigger', true),
             minChars: config.get<number>('minChars', 2),
             delay: config.get<number>('delay', 200),
             sources: {
