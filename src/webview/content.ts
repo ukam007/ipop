@@ -694,16 +694,6 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             }
         }
         
-        const renderer = new TerminalRenderer(config.maxOutputLines);
-        
-        const themes = [
-            { id: 'dark', name: 'Dark (Default)' },
-            { id: 'light', name: 'Light' },
-            { id: 'solarized-dark', name: 'Solarized Dark' },
-            { id: 'monokai', name: 'Monokai' },
-            { id: 'high-contrast', name: 'High Contrast' }
-        ];
-        
         const config = {
             sendShortcut: '${config.sendShortcut}',
             maxHistorySize: ${config.maxHistorySize},
@@ -716,6 +706,16 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             completionMinChars: ${config.completionMinChars},
             completionDelay: ${config.completionDelay}
         };
+        
+        const renderer = new TerminalRenderer(config.maxOutputLines);
+        
+        const themes = [
+            { id: 'dark', name: 'Dark (Default)' },
+            { id: 'light', name: 'Light' },
+            { id: 'solarized-dark', name: 'Solarized Dark' },
+            { id: 'monokai', name: 'Monokai' },
+            { id: 'high-contrast', name: 'High Contrast' }
+        ];
         
         let commandHistory = [];
         let historyIndex = -1;
