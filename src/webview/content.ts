@@ -1042,6 +1042,12 @@ function appendOutput(text) {
             completionDropdown.querySelectorAll('.completion-item').forEach((item, i) => {
                 item.classList.toggle('selected', i === selectedCompletionIndex);
             });
+            
+            // Scroll selected item into view
+            const selectedItem = completionDropdown.querySelector('.completion-item.selected');
+            if (selectedItem) {
+                selectedItem.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            }
         }
         
         function isDropdownVisible() {
