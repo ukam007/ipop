@@ -787,34 +787,21 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
         });
         
 function appendOutput(text) {
-            const newLines = this.process(text);
-            this.lines = this.lines.concat(newLines);
- [];
-            if (this.lines.length > config.maxOutputLines) {
-                this.lines = this.lines.slice(this.lines.length - config.maxOutputLines);
- );
-            }
-            
-            const html = this.lines.map(line => this.renderLine(line)).join('\\n');
+            const html = renderer.render(text);
             outputContent.innerHTML = html;
- '</s>;\n);
-            
-            originalOutput += this.stripANSI(text);
- '</s> + '\n');
+            originalOutput = renderer.stripANSI(text);
             
             if (isAutoScroll) {
                 outputContent.scrollTop = outputContent.scrollHeight;
             }
         }
-        }
         
         function updateConnectionStatus(status, canReconnect) {
             statusDot.className = 'status-dot ' + (status === 'connected' ? 'connected' : '');
             statusText.textContent = status === 'connected' ? 'Connected' : 'Disconnected';
- ' ' + ': ' + status + ' canReconnect: ' + canReconnect);
- 
- reconnectButton.style.display = canReconnect ? 'block' : 'none';
- ' ' + ' console.log('[IPOP DEBUG] updateConnectionStatus:', + status, 'canReconnect:', + canReconnect);
+            reconnectButton.style.display = canReconnect ? 'block' : 'none';
+            console.log('[IPOP] Status:', status, 'canReconnect:', canReconnect);
+        }
         
         function applyCompletion(completion) {
             const cursorPos = inputArea.selectionStart;
