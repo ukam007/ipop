@@ -498,7 +498,7 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
     
     <div class="tooltip" id="tooltip"></div>
     
-    <script>
+    <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
         
         // ANSI Standard Colors (256-color support)
