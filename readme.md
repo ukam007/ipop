@@ -2,7 +2,7 @@
 
 [![VSCode Extension](https://img.shields.io/badge/VSCode-Extension-blue.svg)](https://code.visualstudio.com/)
 [![Version](https://img.shields.io/badge/version-2.0.2-blue.svg)](https://github.com/ukam007/ipop)
-[![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 VSCode Telnet 终端插件，参考华为 IPOP 工具设计，支持智能代码补全。适用于网络设备远程管理、嵌入式开发调试等场景。
 
@@ -1251,7 +1251,7 @@ attach_to_123$         ← 新提示符
 
 ## 许可证
 
-MIT License
+Apache License 2.0 - 详见 [LICENSE](LICENSE)
 
 ---
 

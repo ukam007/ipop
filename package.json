@@ -4,6 +4,7 @@
   "description": "Telnet terminal with smart code completion for VSCode",
   "version": "2.0.2",
   "publisher": "ipop",
+  "license": "Apache-2.0",
   "engines": {
     "vscode": "^1.85.0"
   },
