@@ -987,17 +987,22 @@ function appendOutput(text) {
             const caretPos = getCaretPosition();
             const containerRect = terminalInput.getBoundingClientRect();
             completionDropdown.style.display = 'block';
-            completionDropdown.style.left = caretPos.left + 'px';
-            completionDropdown.style.maxWidth = (containerRect.right - caretPos.left - 20) + 'px';
-            completionDropdown.style.top = 'auto';
-            completionDropdown.style.bottom = (window.innerHeight - caretPos.top + 5) + 'px';
+            completionDropdown.style.maxHeight = '';
             
-            const dropdownHeight = completionDropdown.offsetHeight;
-            const availableSpace = caretPos.top;
-            if (dropdownHeight > availableSpace) {
-                completionDropdown.style.bottom = '';
-                completionDropdown.style.top = '5px';
-                completionDropdown.style.maxHeight = (availableSpace - 10) + 'px';
+            const inputRect = inputArea.getBoundingClientRect();
+            const spaceAbove = caretPos.top;
+            const spaceBelow = inputRect.bottom - caretPos.bottom;
+            
+            if (spaceAbove >= spaceBelow) {
+                completionDropdown.style.left = caretPos.left + 'px';
+                completionDropdown.style.maxWidth = (containerRect.right - caretPos.left - 20) + 'px';
+                completionDropdown.style.top = 'auto';
+                completionDropdown.style.bottom = (window.innerHeight - caretPos.top + 5) + 'px';
+            } else {
+                completionDropdown.style.left = inputRect.left + 'px';
+                completionDropdown.style.maxWidth = inputRect.width + 'px';
+                completionDropdown.style.bottom = 'auto';
+                completionDropdown.style.top = (caretPos.bottom + 5) + 'px';
             }
             
             // Add click handlers
@@ -1026,10 +1031,9 @@ function appendOutput(text) {
             applyCompletion(item.text);
         }
         
-        function navigateCompletion(direction) {
+function navigateCompletion(direction) {
             if (currentCompletions.length === 0) return;
             
-            const oldIndex = selectedCompletionIndex;
             selectedCompletionIndex += direction;
             
             if (selectedCompletionIndex < 0) {
@@ -1037,6 +1041,16 @@ function appendOutput(text) {
             } else if (selectedCompletionIndex >= currentCompletions.length) {
                 selectedCompletionIndex = 0;
             }
+            
+            completionDropdown.querySelectorAll('.completion-item').forEach((item, i) => {
+                item.classList.toggle('selected', i === selectedCompletionIndex);
+            });
+            
+            const selectedItem = completionDropdown.querySelector('.completion-item.selected');
+            if (selectedItem) {
+                selectedItem.scrollIntoView({ block: 'nearest' });
+            }
+        }
             
             // Update selection visual
             completionDropdown.querySelectorAll('.completion-item').forEach((item, i) => {
