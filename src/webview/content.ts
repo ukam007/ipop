@@ -678,7 +678,9 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
                     }
                     
                     if (text[i] === '\\n' || text.charCodeAt(i) === 10) {
-                        lines.push(currentLine);
+                        if (currentLine.length > 0) {
+                            lines.push(currentLine);
+                        }
                         currentLine = [];
                         i++;
                         continue;
@@ -703,7 +705,7 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             }
             
             renderLine(line) {
-                if (line.length === 0) return '<div class="term-line">&nbsp;</div>';
+                if (line.length === 0) return '<div class="term-line"></div>';
                 
                 let html = '<div class="term-line">';
                 let currentSpan = '';
@@ -738,13 +740,6 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
                 }
                 
                 this.lines = this.lines.concat(lines);
-                
-                for (let i = this.lines.length - 1; i > 0; i--) {
-                    if (this.lines[i].length === 0 && this.lines[i - 1].length === 0) {
-                        this.lines.splice(i, 1);
-                    }
-                }
-                
                 if (this.lines.length > this.maxLines) {
                     this.lines = this.lines.slice(this.lines.length - this.maxLines);
                 }
