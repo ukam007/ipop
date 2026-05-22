@@ -15,17 +15,28 @@ export interface WebviewConfig {
     completionDelay: number;
 }
 
+function getNonce(): string {
+    let text = '';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < 32; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+}
+
 export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
     name: string;
     host: string;
     port: number;
     encoding: string;
 }, config: WebviewConfig): string {
+    const nonce = getNonce();
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
     <title>IPOP Terminal - ${connectionInfo.name}</title>
     <style>
         * {
@@ -386,6 +397,7 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             overflow-y: auto;
             z-index: 1000;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            top: -9999px;
         }
         
         .completion-item {
@@ -910,6 +922,7 @@ function appendOutput(text) {
             completionDropdown.style.left = inputRect.left + 'px';
             completionDropdown.style.bottom = (window.innerHeight - inputRect.top + 5) + 'px';
             completionDropdown.style.maxWidth = inputRect.width + 'px';
+            completionDropdown.style.top = (inputRect.top - completionDropdown.offsetHeight - 5) + 'px';
             completionDropdown.style.display = 'block';
             
             // Add click handlers
