@@ -745,7 +745,7 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
                 }
                 
                 const allLines = this.pendingLine ? [...this.lines, this.pendingLine] : this.lines;
-                return allLines.map(line => this.renderLine(line)).join('\\n');
+                return allLines.map(line => this.renderLine(line)).join('');
             }
             
             clear() {
@@ -1217,7 +1217,7 @@ function navigateCompletion(direction) {
             const searchTerm = e.target.value.toLowerCase();
             
             if (!searchTerm) {
-                const html = renderer.lines.map(line => renderer.renderLine(line)).join('\\n');
+                const html = renderer.lines.map(line => renderer.renderLine(line)).join('');
                 outputContent.innerHTML = html;
                 return;
             }
@@ -1273,7 +1273,7 @@ function navigateCompletion(direction) {
         clearFiltersButton.addEventListener('click', () => {
             activeFilters = [];
             updateFilterList();
-            const html = renderer.lines.map(line => renderer.renderLine(line)).join('\\n');
+            const html = renderer.lines.map(line => renderer.renderLine(line)).join('');
             outputContent.innerHTML = html;
         });
         
@@ -1300,7 +1300,7 @@ function navigateCompletion(direction) {
         
         function applyFilters() {
             if (activeFilters.length === 0) {
-                const html = renderer.lines.map(line => renderer.renderLine(line)).join('\\n');
+                const html = renderer.lines.map(line => renderer.renderLine(line)).join('');
                 outputContent.innerHTML = html;
                 return;
             }
@@ -1330,7 +1330,7 @@ function navigateCompletion(direction) {
                 } catch (e) {}
             });
             
-            let html = filteredLines.map(line => renderer.renderLine(line)).join('\\n');
+            let html = filteredLines.map(line => renderer.renderLine(line)).join('');
             
             // Apply highlight filters
             activeFilters.filter(f => f.mode === 'highlight').forEach(filter => {
