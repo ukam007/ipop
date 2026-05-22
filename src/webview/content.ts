@@ -1051,18 +1051,6 @@ function navigateCompletion(direction) {
                 selectedItem.scrollIntoView({ block: 'nearest' });
             }
         }
-            
-            // Update selection visual
-            completionDropdown.querySelectorAll('.completion-item').forEach((item, i) => {
-                item.classList.toggle('selected', i === selectedCompletionIndex);
-            });
-            
-            // Scroll selected item into view
-            const selectedItem = completionDropdown.querySelector('.completion-item.selected');
-            if (selectedItem) {
-                selectedItem.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-            }
-        }
         
         function isDropdownVisible() {
             return completionDropdown.style.display !== 'none';
