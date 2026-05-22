@@ -73,9 +73,10 @@ export class IPOPWebViewPanel {
                 themeId: themeId,
                 cursorStyle: webviewConfig.get<string>('cursorStyle', 'block'),
                 cursorBlink: webviewConfig.get<boolean>('cursorBlink', true),
-                completionAutoTrigger: completionConfig.get<boolean>('autoTrigger', false),
-                completionMinChars: completionConfig.get<number>('minChars', 2),
-                completionDelay: completionConfig.get<number>('delay', 200)
+                completionAutoTrigger: completionConfig.get<boolean>('autoTrigger', true),
+                completionMinChars: completionConfig.get<number>('minChars', 3),
+                completionDelay: completionConfig.get<number>('delay', 500),
+                completionMaxItems: completionConfig.get<number>('maxItems', 10)
             };
             
             this.panel.webview.html = getWebviewContent(this.panel.webview, {
@@ -95,9 +96,10 @@ export class IPOPWebViewPanel {
                 themeId: 'dark',
                 cursorStyle: 'block',
                 cursorBlink: true,
-                completionAutoTrigger: false,
-                completionMinChars: 2,
-                completionDelay: 200
+                completionAutoTrigger: true,
+                completionMinChars: 3,
+                completionDelay: 500,
+                completionMaxItems: 10
             };
             
             this.panel.webview.html = getWebviewContent(this.panel.webview, {
@@ -130,7 +132,7 @@ export class IPOPWebViewPanel {
                 break;
 
             case 'requestCompletions':
-                this.provideCompletions(message.partialInput || '');
+                this.provideCompletions(message.partialInput || '', message.maxItems);
                 break;
 
             case 'requestHistory':
@@ -208,10 +210,11 @@ export class IPOPWebViewPanel {
         }
     }
     
-    private provideCompletions(partial: string): void {
+    private provideCompletions(partial: string, maxItems?: number): void {
         try {
             const config = this.getCompletionConfig();
-            const completions = this.getAggregatedCompletions(partial, config.maxItems);
+            const limit = maxItems || config.maxItems;
+            const completions = this.getAggregatedCompletions(partial, limit);
             
             this.sendMessage({
                 command: 'completionsList',

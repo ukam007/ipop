@@ -13,6 +13,7 @@ export interface WebviewConfig {
     completionAutoTrigger: boolean;
     completionMinChars: number;
     completionDelay: number;
+    completionMaxItems: number;
 }
 
 function getNonce(): string {
@@ -404,8 +405,8 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             padding: 4px 8px;
             cursor: pointer;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            align-items: flex-start;
             font-size: 13px;
         }
         
@@ -414,20 +415,35 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             background: #094771;
         }
         
+        .completion-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        
         .completion-item-text {
             color: #d4d4d4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 70%;
         }
         
         .completion-item-type {
             color: #808080;
             font-size: 11px;
-            margin-left: 10px;
+            flex-shrink: 0;
         }
         
         .completion-item-detail {
             color: #608b4e;
             font-size: 11px;
             font-style: italic;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
         }
     </style>
 </head>
@@ -742,7 +758,8 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
             cursorBlink: ${config.cursorBlink},
             completionAutoTrigger: ${config.completionAutoTrigger},
             completionMinChars: ${config.completionMinChars},
-            completionDelay: ${config.completionDelay}
+            completionDelay: ${config.completionDelay},
+            completionMaxItems: ${config.completionMaxItems}
         };
         
         const renderer = new TerminalRenderer(config.maxOutputLines);
@@ -769,10 +786,11 @@ export function getWebviewContent(webview: vscode.Webview, connectionInfo: {
         let selectedCompletionIndex = 0;
         let completionPrefix = '';
         let autoCompletionTimer = null;
-        let completionConfig = {
+let completionConfig = {
             autoTrigger: config.completionAutoTrigger,
             minChars: config.completionMinChars,
-            delay: config.completionDelay
+            delay: config.completionDelay,
+            maxItems: config.completionMaxItems
         };
         
         const outputContent = document.getElementById('outputContent');
@@ -910,7 +928,7 @@ function appendOutput(text) {
             // Build dropdown content
             completionDropdown.innerHTML = completions.map((item, index) => 
                 '<div class="completion-item' + (index === 0 ? ' selected' : '') + '" data-index="' + index + '">' +
-                    '<div>' +
+                    '<div class="completion-item-row">' +
                         '<span class="completion-item-text">' + escapeHtml(item.text) + '</span>' +
                         '<span class="completion-item-type">[' + item.type + ']</span>' +
                     '</div>' +
@@ -919,14 +937,26 @@ function appendOutput(text) {
             ).join('');
             
             const inputRect = inputArea.getBoundingClientRect();
-            completionDropdown.style.left = inputRect.left + 'px';
-            completionDropdown.style.bottom = (window.innerHeight - inputRect.top + 5) + 'px';
-            completionDropdown.style.maxWidth = inputRect.width + 'px';
-            completionDropdown.style.top = (inputRect.top - completionDropdown.offsetHeight - 5) + 'px';
             completionDropdown.style.display = 'block';
+            completionDropdown.style.left = inputRect.left + 'px';
+            completionDropdown.style.maxWidth = inputRect.width + 'px';
+            completionDropdown.style.top = '';
+            completionDropdown.style.bottom = (window.innerHeight - inputRect.top + 5) + 'px';
+            
+            const dropdownHeight = completionDropdown.offsetHeight;
+            const availableSpace = inputRect.top;
+            if (dropdownHeight > availableSpace) {
+                completionDropdown.style.bottom = '';
+                completionDropdown.style.top = '5px';
+                completionDropdown.style.maxHeight = (availableSpace - 10) + 'px';
+            }
             
             // Add click handlers
             completionDropdown.querySelectorAll('.completion-item').forEach(item => {
+                item.setAttribute('tabindex', '-1');
+                item.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                });
                 item.addEventListener('click', () => {
                     const index = parseInt(item.dataset.index);
                     selectCompletion(index);
@@ -1125,10 +1155,11 @@ function appendOutput(text) {
             const lastWordMatch = textBefore.match(/\\S+$/);
             const lastWord = lastWordMatch ? lastWordMatch[0] : '';
             
-            if (lastWord.length >= 2) {
+            if (lastWord.length >= completionConfig.minChars) {
                 vscode.postMessage({
                     command: 'requestCompletions',
-                    partialInput: lastWord
+                    partialInput: lastWord,
+                    maxItems: completionConfig.maxItems
                 });
             }
         }

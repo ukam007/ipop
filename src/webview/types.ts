@@ -8,6 +8,7 @@ export interface WebviewMessage {
     name?: string;
     commands?: string[];
     partialInput?: string;
+    maxItems?: number;
 }
 
 export interface ExtensionMessage {
