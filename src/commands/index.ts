@@ -5,11 +5,7 @@ import { getConnectionsProvider, getCompletionSourcesProvider } from '../sidebar
 import { WebViewPanelRegistry } from '../webview/panel';
 import { getSymbolIndexer } from '../completion/indexer';
 import { ConnectionTreeItem, CompletionSourceTreeItem, ShortcutTreeItem } from '../sidebar/item';
-import { addShortcut, deleteShortcut, sendShortcut } from './shortcuts';
-
-function generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-}
+import { addShortcut, deleteShortcut, sendShortcut, editShortcut } from './shortcuts';
 
 export async function newConnection(): Promise<void> {
     const config = vscode.workspace.getConfiguration('ipop.telnet');
@@ -47,7 +43,7 @@ export async function newConnection(): Promise<void> {
     if (!encodingPick) return;
 
     const connection: TelnetConnection = {
-        id: generateId(),
+        id: getConfigStore().generateId(),
         name,
         host,
         port,
@@ -150,7 +146,7 @@ export async function addCompletionSource(): Promise<void> {
     if (!name) return;
 
     const source: CompletionSource = {
-        id: generateId(),
+        id: getConfigStore().generateId(),
         name,
         type: typePick as CompletionSourceType,
         enabled: true
@@ -300,6 +296,8 @@ export function registerCommands(): vscode.Disposable[] {
         vscode.commands.registerCommand('ipop.deleteConnection', deleteConnection),
         
         vscode.commands.registerCommand('ipop.addShortcut', addShortcut),
+        vscode.commands.registerCommand('ipop.editShortcut',
+            (item: ShortcutTreeItem) => editShortcut(item.shortcut)),
         vscode.commands.registerCommand('ipop.deleteShortcut', 
             (item: ShortcutTreeItem) => deleteShortcut(item.shortcut)),
         vscode.commands.registerCommand('ipop.sendShortcut',

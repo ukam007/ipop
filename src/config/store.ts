@@ -63,6 +63,19 @@ export class ConfigStore {
         await this.saveShortcuts(shortcuts);
     }
 
+    async updateShortcut(id: string, updated: ShortcutCommand): Promise<void> {
+        const shortcuts = this.getShortcuts();
+        const index = shortcuts.findIndex(s => s.id === id);
+        if (index !== -1) {
+            shortcuts[index] = updated;
+            await this.saveShortcuts(shortcuts);
+        }
+    }
+
+    generateId(): string {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    }
+
     getCompletionSources(): CompletionSource[] {
         return this.context.globalState.get<CompletionSource[]>(SOURCES_KEY, []);
     }

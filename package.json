@@ -82,6 +82,11 @@
         "icon": "$(add)"
       },
       {
+        "command": "ipop.editShortcut",
+        "title": "Edit Shortcut",
+        "icon": "$(edit)"
+      },
+      {
         "command": "ipop.deleteShortcut",
         "title": "Delete Shortcut",
         "icon": "$(trash)"
@@ -208,9 +213,14 @@
           "group": "inline"
         },
         {
+          "command": "ipop.editShortcut",
+          "when": "view == ipop.shortcuts && viewItem == shortcut",
+          "group": "1_edit"
+        },
+        {
           "command": "ipop.deleteShortcut",
           "when": "view == ipop.shortcuts && viewItem == shortcut",
-          "group": "1_delete"
+          "group": "2_delete"
         },
         {
           "command": "ipop.completion.refreshIndex",

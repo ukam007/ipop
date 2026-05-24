@@ -2,10 +2,7 @@ import * as vscode from 'vscode';
 import { ShortcutCommand } from '../types';
 import { getConfigStore } from '../config/store';
 import { getShortcutsProvider } from '../sidebar/provider';
-
-function generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-}
+import { WebViewPanelRegistry } from '../webview/panel';
 
 export async function addShortcut(): Promise<void> {
     const name = await vscode.window.showInputBox({
@@ -28,7 +25,7 @@ export async function addShortcut(): Promise<void> {
     });
 
     const shortcut: ShortcutCommand = {
-        id: generateId(),
+        id: getConfigStore().generateId(),
         name,
         command,
         description
@@ -52,37 +49,68 @@ export async function deleteShortcut(shortcut: ShortcutCommand): Promise<void> {
     vscode.window.showInformationMessage(`Shortcut "${shortcut.name}" deleted`);
 }
 
+export async function editShortcut(shortcut: ShortcutCommand): Promise<void> {
+    const name = await vscode.window.showInputBox({
+        prompt: 'Shortcut name',
+        placeHolder: 'Enter shortcut name',
+        value: shortcut.name
+    });
+
+    if (!name) return;
+
+    const command = await vscode.window.showInputBox({
+        prompt: 'Command',
+        placeHolder: 'Enter command text',
+        value: shortcut.command
+    });
+
+    if (!command) return;
+
+    const description = await vscode.window.showInputBox({
+        prompt: 'Description (optional)',
+        placeHolder: 'Enter description',
+        value: shortcut.description || ''
+    });
+
+    const updated: ShortcutCommand = {
+        id: shortcut.id,
+        name,
+        command,
+        description
+    };
+
+    await getConfigStore().updateShortcut(shortcut.id, updated);
+    getShortcutsProvider().refresh();
+    vscode.window.showInformationMessage(`Shortcut "${name}" updated`);
+}
+
 export async function sendShortcut(shortcut: ShortcutCommand): Promise<void> {
-    const terminals = vscode.window.terminals;
-    
-    if (terminals.length === 0) {
-        vscode.window.showWarningMessage('No active terminal');
+    const registry = WebViewPanelRegistry.getInstance();
+    const panels = registry.getAll();
+
+    if (panels.length === 0) {
+        vscode.window.showWarningMessage('No active IPOP connection');
         return;
     }
 
-    const ipopTerminals: vscode.Terminal[] = [];
-    const otherTerminals: vscode.Terminal[] = [];
-    
-    for (const t of terminals) {
-        if (t.name.includes('IPOP') || t.name.includes('Telnet')) {
-            ipopTerminals.push(t);
-        } else {
-            otherTerminals.push(t);
+    if (panels.length === 1) {
+        const conn = panels[0].getConnection();
+        if (!panels[0].sendExternalCommand(shortcut.command)) {
+            vscode.window.showWarningMessage(`Connection "${conn.name}" is not active`);
         }
+        return;
     }
 
-    const terminalNames = terminals.map(t => ({
-        label: t.name,
-        description: ipopTerminals.includes(t) ? '(IPOP Terminal)' : '',
-        terminal: t
+    const items = panels.map(p => ({
+        label: p.getConnection().name,
+        detail: `${p.getConnection().host}:${p.getConnection().port}`,
+        panel: p
     }));
-    
-    const selected = await vscode.window.showQuickPick(terminalNames, {
-        placeHolder: 'Select terminal to send command'
+
+    const selected = await vscode.window.showQuickPick(items, {
+        placeHolder: 'Select IPOP connection to send command'
     });
 
     if (!selected) return;
-
-    selected.terminal.show();
-    selected.terminal.sendText(shortcut.command);
+    selected.panel.sendExternalCommand(shortcut.command);
 }

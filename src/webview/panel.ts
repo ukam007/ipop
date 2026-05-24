@@ -441,6 +441,17 @@ export class IPOPWebViewPanel {
     public getConnection(): TelnetConnection {
         return this.connection;
     }
+
+    public sendExternalCommand(cmd: string): boolean {
+        if (!this.client || !this.client.isConnected()) {
+            return false;
+        }
+        if (this.logger) {
+            this.logger.logInput(cmd);
+        }
+        this.client.send(cmd);
+        return true;
+    }
 }
 
 export class WebViewPanelRegistry {
